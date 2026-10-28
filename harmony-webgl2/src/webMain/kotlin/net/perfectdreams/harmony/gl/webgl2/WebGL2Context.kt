@@ -86,6 +86,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = context.vertexAttribIPointer(index.asGLuint(), size, type.asGLenum(), stride, offset)
 
     override fun enableVertexAttribArray(index: Int) = context.enableVertexAttribArray(index.asGLuint())
+    override fun disableVertexAttribArray(index: Int) = context.disableVertexAttribArray(index.asGLuint())
     override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray {
         val dst = Uint8Array<ArrayBufferLike>(width * height * 4)
         context.readPixels(x, y, width, height, format.asGLenum(), type.asGLenum(), dst)
@@ -146,6 +147,8 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
 
     override fun texParameteri(target: Int, pname: Int, param: Int) = context.texParameteri(target.asGLenum(), pname.asGLenum(), param.asGLenum())
     override fun generateMipmap(target: Int) = context.generateMipmap(target.asGLenum())
+    override fun depthFunc(func: Int) = context.depthFunc(func.asGLenum())
+
     override fun genFramebuffers() = this.framebuffers.allocate(context.createFramebuffer())
     override fun deleteFramebuffers(values: List<Int>) {
         if (values.isNotEmpty()) {

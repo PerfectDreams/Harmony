@@ -30,6 +30,7 @@ abstract class GLContext {
     abstract fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long)
     abstract fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int)
     abstract fun enableVertexAttribArray(index: Int)
+    abstract fun disableVertexAttribArray(index: Int)
     abstract fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray
     abstract fun pixelStorei(pname: Int, param: Int)
     abstract fun texImage2D(target: Int, level: Int, internalFormat: Int, width: Int, height: Int, border: Int, format: Int, type: Int)
@@ -37,6 +38,7 @@ abstract class GLContext {
     abstract fun texSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, textureSource: TextureSource)
     abstract fun texParameteri(target: Int, pname: Int, param: Int)
     abstract fun generateMipmap(target: Int)
+    abstract fun depthFunc(func: Int)
 
     abstract fun genFramebuffers(): Int
     fun deleteFramebuffer(framebuffer: Int) = deleteFramebuffers(listOf(framebuffer))

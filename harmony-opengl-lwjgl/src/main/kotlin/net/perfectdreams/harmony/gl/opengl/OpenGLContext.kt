@@ -8,6 +8,7 @@ import org.lwjgl.opengl.GL11.glBlendFunc
 import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
 import org.lwjgl.opengl.GL11.glDeleteTextures
+import org.lwjgl.opengl.GL11.glDepthFunc
 import org.lwjgl.opengl.GL11.glDisable
 import org.lwjgl.opengl.GL11.glDrawArrays
 import org.lwjgl.opengl.GL11.glEnable
@@ -30,6 +31,7 @@ import org.lwjgl.opengl.GL20.glCreateProgram
 import org.lwjgl.opengl.GL20.glCreateShader
 import org.lwjgl.opengl.GL20.glDeleteShader
 import org.lwjgl.opengl.GL20.glDetachShader
+import org.lwjgl.opengl.GL20.glDisableVertexAttribArray
 import org.lwjgl.opengl.GL20.glEnableVertexAttribArray
 import org.lwjgl.opengl.GL20.glGetProgramInfoLog
 import org.lwjgl.opengl.GL20.glGetProgrami
@@ -83,6 +85,7 @@ class OpenGLContext : GLContext() {
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = glVertexAttribPointer(index, size, type, normalized, stride, offset)
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = glVertexAttribIPointer(index, size, type, stride, offset.toLong())
     override fun enableVertexAttribArray(index: Int) = glEnableVertexAttribArray(index)
+    override fun disableVertexAttribArray(index: Int) = glDisableVertexAttribArray(index)
     override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray {
         val byteBuffer = ByteBuffer.allocateDirect(width * height * 4)
         glReadPixels(x, y, width, height, format, type, byteBuffer)
@@ -140,6 +143,8 @@ class OpenGLContext : GLContext() {
 
     override fun texParameteri(target: Int, pname: Int, param: Int) = glTexParameteri(target, pname, param)
     override fun generateMipmap(target: Int) = glGenerateMipmap(target)
+    override fun depthFunc(func: Int) = glDepthFunc(func)
+
     override fun genFramebuffers() = glGenFramebuffers()
     override fun deleteFramebuffers(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteFramebuffers(it) }
     override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture, level)
