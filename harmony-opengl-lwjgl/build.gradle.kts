@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    `maven-publish`
 }
 
 val lwjglVersion = "3.4.3"
@@ -25,4 +26,12 @@ repositories {
 
 kotlin {
     jvmToolchain(21)
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
 }

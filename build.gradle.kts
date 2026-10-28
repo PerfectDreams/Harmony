@@ -2,9 +2,18 @@ plugins {
     kotlin("jvm") version "2.4.21"
 }
 
-allprojects {
-    group = "net.perfectdreams.harmony"
-    version = "1.0-SNAPSHOT"
+subprojects {
+    plugins.withId("maven-publish") {
+        extensions.configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "PerfectDreams"
+                    url = uri("https://repo.perfectdreams.net/")
+                    credentials(PasswordCredentials::class)
+                }
+            }
+        }
+    }
 }
 
 repositories {
