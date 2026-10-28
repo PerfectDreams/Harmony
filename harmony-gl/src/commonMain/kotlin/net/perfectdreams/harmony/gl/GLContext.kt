@@ -39,6 +39,7 @@ abstract class GLContext {
     abstract fun texParameteri(target: Int, pname: Int, param: Int)
     abstract fun generateMipmap(target: Int)
     abstract fun depthFunc(func: Int)
+    abstract fun depthMask(flag: Boolean)
 
     abstract fun genFramebuffers(): Int
     fun deleteFramebuffer(framebuffer: Int) = deleteFramebuffers(listOf(framebuffer))

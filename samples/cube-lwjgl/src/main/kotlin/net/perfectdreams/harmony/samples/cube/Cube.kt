@@ -12,6 +12,8 @@ import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
 import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
 import net.perfectdreams.harmony.gl.GPUResources
+import net.perfectdreams.harmony.gl.pipelines.CompareFunc
+import net.perfectdreams.harmony.gl.pipelines.DepthState
 import net.perfectdreams.harmony.gl.pipelines.Pipeline
 import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
 import org.joml.Matrix4f
@@ -417,7 +419,7 @@ fun main() {
             gpu.onRenderTarget(gpu.windowRenderTarget) {
                 gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
 
-                withPipeline(Pipeline(shader, enableDepthTest = true)) {
+                withPipeline(Pipeline(shader, depth = DepthState(write = true))) {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)
                         .rotateY(SDL_GetTicks() / 1000f)

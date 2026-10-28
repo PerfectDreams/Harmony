@@ -9,6 +9,7 @@ import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
 import org.lwjgl.opengl.GL11.glDeleteTextures
 import org.lwjgl.opengl.GL11.glDepthFunc
+import org.lwjgl.opengl.GL11.glDepthMask
 import org.lwjgl.opengl.GL11.glDisable
 import org.lwjgl.opengl.GL11.glDrawArrays
 import org.lwjgl.opengl.GL11.glEnable
@@ -144,6 +145,7 @@ class OpenGLContext : GLContext() {
     override fun texParameteri(target: Int, pname: Int, param: Int) = glTexParameteri(target, pname, param)
     override fun generateMipmap(target: Int) = glGenerateMipmap(target)
     override fun depthFunc(func: Int) = glDepthFunc(func)
+    override fun depthMask(flag: Boolean) = glDepthMask(flag)
 
     override fun genFramebuffers() = glGenFramebuffers()
     override fun deleteFramebuffers(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteFramebuffers(it) }

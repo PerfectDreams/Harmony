@@ -43,7 +43,7 @@ class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
         vertexAttributes.apply(gl)
     }
 
-    fun <T : SpriteShader> createSpritePipeline(shader: T) = Pipeline(shader, enableDepthTest = false)
+    fun <T : SpriteShader> createSpritePipeline(shader: T) = Pipeline(shader, null)
 
     fun <T : SpriteShader> drawBatch(pipelineScope: PipelineScope<T>, block: SpriteBatcherScope.() -> Unit) = drawBatch(pipelineScope.shader, block)
 

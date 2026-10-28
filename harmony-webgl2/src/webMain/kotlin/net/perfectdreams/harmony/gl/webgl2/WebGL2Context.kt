@@ -148,6 +148,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun texParameteri(target: Int, pname: Int, param: Int) = context.texParameteri(target.asGLenum(), pname.asGLenum(), param.asGLenum())
     override fun generateMipmap(target: Int) = context.generateMipmap(target.asGLenum())
     override fun depthFunc(func: Int) = context.depthFunc(func.asGLenum())
+    override fun depthMask(flag: Boolean) = context.depthMask(flag)
 
     override fun genFramebuffers() = this.framebuffers.allocate(context.createFramebuffer())
     override fun deleteFramebuffers(values: List<Int>) {
