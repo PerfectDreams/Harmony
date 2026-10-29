@@ -196,7 +196,12 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         context.useProgram(programs.getObjectById(program))
     }
 
-    override fun getUniformLocation(program: Int, name: String) = this.uniformLocations.allocate(context.getUniformLocation(programs.getObjectById(program)!!, name)!!)
+    override fun getUniformLocation(program: Int, name: String): Int {
+        val program = programs.getObjectById(program) ?: return -1
+        val uniformLocation = context.getUniformLocation(program, name) ?: return -1
+        return this.uniformLocations.allocate(uniformLocation)
+    }
+
     override fun programUniform1i(program: Int, location: Int, x: Int) {
         checkActiveProgram(program)
         context.uniform1i(this.uniformLocations.getObjectById(location), x)
