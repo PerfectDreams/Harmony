@@ -17,8 +17,13 @@ abstract class GLContext {
     abstract fun bufferData(target: Int, buffer: FloatArray, usage: Int)
     abstract fun bufferData(target: Int, buffer: IntArray, usage: Int)
     abstract fun bufferSubData(target: Int, offset: Long, buffer: FloatArray)
+    fun deleteBuffer(buffer: Int) = deleteBuffers(listOf(buffer))
+    abstract fun deleteBuffers(values: List<Int>)
     abstract fun bindVertexArray(array: Int)
+    fun deleteVertexArray(array: Int) = deleteVertexArrays(listOf(array))
+    abstract fun deleteVertexArrays(values: List<Int>)
     abstract fun drawArrays(mode: Int, first: Int, count: Int)
+    abstract fun drawElements(mode: Int, count: Int, type: Int, offset: Long)
     abstract fun genTextures(): Int
     abstract fun bindTexture(target: Int, texture: Int)
     abstract fun activeTexture(texture: Int)
@@ -27,6 +32,7 @@ abstract class GLContext {
     abstract fun genVertexArrays(): Int
     abstract fun genBuffers(): Int
     abstract fun blendFunc(src: Int, dst: Int)
+    abstract fun cullFace(mode: Int)
     abstract fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long)
     abstract fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int)
     abstract fun enableVertexAttribArray(index: Int)
@@ -61,6 +67,7 @@ abstract class GLContext {
     abstract fun getProgrami(program: Int, pname: Int): Int
     abstract fun getProgramInfoLog(program: Int, maxLength: Int): String
     abstract fun useProgram(program: Int)
+    abstract fun deleteProgram(program: Int)
     fun checkActiveProgram(program: Int) = check(this.activeProgram == program) { "We want $program to be bound, but the current active program is ${this.activeProgram}!" }
 
     abstract fun getUniformLocation(program: Int, name: String): Int

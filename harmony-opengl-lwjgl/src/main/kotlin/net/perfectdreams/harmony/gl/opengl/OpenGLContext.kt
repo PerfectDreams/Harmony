@@ -7,11 +7,13 @@ import org.lwjgl.opengl.GL11.glBindTexture
 import org.lwjgl.opengl.GL11.glBlendFunc
 import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
+import org.lwjgl.opengl.GL11.glCullFace
 import org.lwjgl.opengl.GL11.glDeleteTextures
 import org.lwjgl.opengl.GL11.glDepthFunc
 import org.lwjgl.opengl.GL11.glDepthMask
 import org.lwjgl.opengl.GL11.glDisable
 import org.lwjgl.opengl.GL11.glDrawArrays
+import org.lwjgl.opengl.GL11.glDrawElements
 import org.lwjgl.opengl.GL11.glEnable
 import org.lwjgl.opengl.GL11.glGenTextures
 import org.lwjgl.opengl.GL11.glPixelStorei
@@ -25,11 +27,13 @@ import org.lwjgl.opengl.GL13.glActiveTexture
 import org.lwjgl.opengl.GL15.glBindBuffer
 import org.lwjgl.opengl.GL15.glBufferData
 import org.lwjgl.opengl.GL15.glBufferSubData
+import org.lwjgl.opengl.GL15.glDeleteBuffers
 import org.lwjgl.opengl.GL15.glGenBuffers
 import org.lwjgl.opengl.GL20.glAttachShader
 import org.lwjgl.opengl.GL20.glCompileShader
 import org.lwjgl.opengl.GL20.glCreateProgram
 import org.lwjgl.opengl.GL20.glCreateShader
+import org.lwjgl.opengl.GL20.glDeleteProgram
 import org.lwjgl.opengl.GL20.glDeleteShader
 import org.lwjgl.opengl.GL20.glDetachShader
 import org.lwjgl.opengl.GL20.glDisableVertexAttribArray
@@ -53,6 +57,7 @@ import org.lwjgl.opengl.GL30.glBindFramebuffer
 import org.lwjgl.opengl.GL30.glBindVertexArray
 import org.lwjgl.opengl.GL30.glCheckFramebufferStatus
 import org.lwjgl.opengl.GL30.glDeleteFramebuffers
+import org.lwjgl.opengl.GL30.glDeleteVertexArrays
 import org.lwjgl.opengl.GL30.glFramebufferTexture2D
 import org.lwjgl.opengl.GL30.glGenFramebuffers
 import org.lwjgl.opengl.GL30.glGenVertexArrays
@@ -74,8 +79,11 @@ class OpenGLContext : GLContext() {
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = glBufferData(target, buffer, usage)
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = glBufferData(target, buffer, usage)
     override fun bufferSubData(target: Int, offset: Long, buffer: FloatArray) = glBufferSubData(target, offset, buffer)
+    override fun deleteBuffers(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteBuffers(it) }
     override fun bindVertexArray(array: Int) = glBindVertexArray(array)
+    override fun deleteVertexArrays(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteVertexArrays(it) }
     override fun drawArrays(mode: Int, first: Int, count: Int) = glDrawArrays(mode, first, count)
+    override fun drawElements(mode: Int, count: Int, type: Int, offset: Long) = glDrawElements(mode, count, type, offset)
     override fun genTextures() = glGenTextures()
     override fun bindTexture(target: Int, texture: Int) = glBindTexture(target, texture)
     override fun activeTexture(texture: Int) = glActiveTexture(texture)
@@ -83,6 +91,7 @@ class OpenGLContext : GLContext() {
     override fun genVertexArrays() = glGenVertexArrays()
     override fun genBuffers() = glGenBuffers()
     override fun blendFunc(src: Int, dst: Int) = glBlendFunc(src, dst)
+    override fun cullFace(mode: Int) = glCullFace(mode)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = glVertexAttribPointer(index, size, type, normalized, stride, offset)
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = glVertexAttribIPointer(index, size, type, stride, offset.toLong())
     override fun enableVertexAttribArray(index: Int) = glEnableVertexAttribArray(index)
@@ -169,6 +178,8 @@ class OpenGLContext : GLContext() {
         this.activeProgram = program
         glUseProgram(program)
     }
+
+    override fun deleteProgram(program: Int) = glDeleteProgram(program)
 
     override fun getUniformLocation(program: Int, name: String) = glGetUniformLocation(program, name)
     override fun programUniform1i(program: Int, location: Int, x: Int) {

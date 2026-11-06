@@ -66,8 +66,21 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toInt32ArrayFast(), usage.asGLenum())
 
     override fun bufferSubData(target: Int, offset: Long, buffer: FloatArray) = context.bufferSubData(target.asGLenum(), offset.toInt(), buffer.toFloat32ArrayFast())
+    override fun deleteBuffers(values: List<Int>) {
+        for (bufferId in values) {
+            context.deleteBuffer(buffers.getObjectById(bufferId))
+            buffers.deleteById(bufferId)
+        }
+    }
     override fun bindVertexArray(array: Int) = context.bindVertexArray(this.vertexArrayObjects.getObjectById(array))
+    override fun deleteVertexArrays(values: List<Int>) {
+        for (vertexArrayId in values) {
+            context.deleteVertexArray(vertexArrayObjects.getObjectById(vertexArrayId))
+            vertexArrayObjects.deleteById(vertexArrayId)
+        }
+    }
     override fun drawArrays(mode: Int, first: Int, count: Int) = context.drawArrays(mode.asGLenum(), first, count)
+    override fun drawElements(mode: Int, count: Int, type: Int, offset: Long) = context.drawElements(mode.asGLenum(), count, type.asGLenum(), offset.toInt())
     override fun genTextures() = textures.allocate(context.createTexture())
     override fun bindTexture(target: Int, texture: Int) = context.bindTexture(target.asGLenum(), textures.getObjectById(texture))
     override fun activeTexture(texture: Int) = context.activeTexture(texture.asGLenum())
@@ -82,6 +95,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun genVertexArrays() = this.vertexArrayObjects.allocate(context.createVertexArray())
     override fun genBuffers() = this.buffers.allocate(context.createBuffer())
     override fun blendFunc(src: Int, dst: Int) = context.blendFunc(src.asGLenum(), dst.asGLenum())
+    override fun cullFace(mode: Int) = context.cullFace(mode.asGLenum())
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = context.vertexAttribPointer(index.asGLuint(), size, type.asGLenum(), normalized, stride, offset.toInt())
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = context.vertexAttribIPointer(index.asGLuint(), size, type.asGLenum(), stride, offset)
 
@@ -180,6 +194,10 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         this.shaders.deleteById(shader)
     }
     override fun createProgram() = this.programs.allocate(context.createProgram())
+    override fun deleteProgram(program: Int) {
+        context.deleteProgram(this.programs.getObjectById(program))
+        this.programs.deleteById(program)
+    }
     override fun attachShader(program: Int, shader: Int) = context.attachShader(programs.getObjectById(program)!!, this.shaders.getObjectById(shader)!!)
     override fun detachShader(program: Int, shader: Int) = context.detachShader(programs.getObjectById(program)!!, this.shaders.getObjectById(shader)!!)
     override fun linkProgram(program: Int) = context.linkProgram(programs.getObjectById(program)!!)
