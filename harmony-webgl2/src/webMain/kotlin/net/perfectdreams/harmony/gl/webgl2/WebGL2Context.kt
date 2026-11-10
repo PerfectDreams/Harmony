@@ -1,5 +1,6 @@
 package net.perfectdreams.harmony.gl.webgl2
 
+import js.array.toJsArray
 import js.buffer.ArrayBufferLike
 import js.reflect.unsafeCast
 import js.typedarrays.Uint8Array
@@ -64,6 +65,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun bufferData(target: Int, size: Long, usage: Int) = context.bufferData(target.asGLenum(), size.toInt(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toFloat32ArrayFast(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toInt32ArrayFast(), usage.asGLenum())
+    override fun bufferData(target: Int, buffer: ByteArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toArrayBufferFast(), usage.asGLenum())
 
     override fun bufferSubData(target: Int, offset: Long, buffer: FloatArray) = context.bufferSubData(target.asGLenum(), offset.toInt(), buffer.toFloat32ArrayFast())
     override fun deleteBuffers(values: List<Int>) {
@@ -96,6 +98,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun genBuffers() = this.buffers.allocate(context.createBuffer())
     override fun blendFunc(src: Int, dst: Int) = context.blendFunc(src.asGLenum(), dst.asGLenum())
     override fun cullFace(mode: Int) = context.cullFace(mode.asGLenum())
+    override fun polygonOffset(factor: Float, units: Float) = context.polygonOffset(factor, units)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = context.vertexAttribPointer(index.asGLuint(), size, type.asGLenum(), normalized, stride, offset.toInt())
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = context.vertexAttribIPointer(index.asGLuint(), size, type.asGLenum(), stride, offset)
 
@@ -133,6 +136,36 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         }
     }
 
+    override fun texImage3D(target: Int, level: Int, internalFormat: Int, width: Int, height: Int, depth: Int, border: Int, format: Int, type: Int) = context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), width, height, depth, border, format.asGLenum(), type.asGLenum(), null)
+
+    override fun texImage3D(
+        target: Int,
+        level: Int,
+        internalFormat: Int,
+        depth: Int,
+        border: Int,
+        format: Int,
+        type: Int,
+        textureSource: TextureSource
+    ) {
+        require(depth > 0 && textureSource.height % depth == 0) { "The texture source height (${textureSource.height}) must be a multiple of the depth ($depth)!" }
+        val layerHeight = textureSource.height / depth
+
+        when (textureSource) {
+            is ByteArrayTextureSource -> {
+                val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
+                context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, layerHeight, depth, border, format.asGLenum(), type.asGLenum(), pixels)
+            }
+            is BrowserImageTextureSource -> {
+                context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, layerHeight, depth, border, format.asGLenum(), type.asGLenum(), textureSource.image)
+            }
+            is BrowserImageBitmapTextureSource -> {
+                context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, layerHeight, depth, border, format.asGLenum(), type.asGLenum(), textureSource.image)
+            }
+            else -> error("Unsupported image type!")
+        }
+    }
+
     override fun texSubImage2D(
         target: Int,
         level: Int,
@@ -147,13 +180,41 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         when (textureSource) {
             is ByteArrayTextureSource -> {
                 val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
-                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, textureSource.width, textureSource.height, format.asGLenum(), type.asGLenum(), pixels)
+                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, width, height, format.asGLenum(), type.asGLenum(), pixels)
             }
             is BrowserImageTextureSource -> {
-                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, textureSource.width, textureSource.height, format.asGLenum(), type.asGLenum(), textureSource.image)
+                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, width, height, format.asGLenum(), type.asGLenum(), textureSource.image)
             }
             is BrowserImageBitmapTextureSource -> {
-                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, textureSource.width, textureSource.height, format.asGLenum(), type.asGLenum(), textureSource.image)
+                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, width, height, format.asGLenum(), type.asGLenum(), textureSource.image)
+            }
+            else -> error("Unsupported image type!")
+        }
+    }
+
+    override fun texSubImage3D(
+        target: Int,
+        level: Int,
+        xoffset: Int,
+        yoffset: Int,
+        zoffset: Int,
+        width: Int,
+        height: Int,
+        depth: Int,
+        format: Int,
+        type: Int,
+        textureSource: TextureSource
+    ) {
+        when (textureSource) {
+            is ByteArrayTextureSource -> {
+                val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
+                context.texSubImage3D(target.asGLenum(), level, xoffset, yoffset, zoffset, width, height, depth, format.asGLenum(), type.asGLenum(), pixels)
+            }
+            is BrowserImageTextureSource -> {
+                context.texSubImage3D(target.asGLenum(), level, xoffset, yoffset, zoffset, width, height, depth, format.asGLenum(), type.asGLenum(), textureSource.image)
+            }
+            is BrowserImageBitmapTextureSource -> {
+                context.texSubImage3D(target.asGLenum(), level, xoffset, yoffset, zoffset, width, height, depth, format.asGLenum(), type.asGLenum(), textureSource.image)
             }
             else -> error("Unsupported image type!")
         }
@@ -176,6 +237,13 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int) = context.framebufferTexture2D(target.asGLenum(), attachment.asGLenum(), textarget.asGLenum(), textures.getObjectById(texture), level)
     override fun checkFramebufferStatus(target: Int) = unsafeCast<JsNumber>(context.checkFramebufferStatus(target.asGLenum())).toInt()
     override fun bindFramebuffer(target: Int, framebuffer: Int) = context.bindFramebuffer(target.asGLenum(), this.framebuffers.getObjectById(framebuffer))
+    override fun drawBuffers(buffers: IntArray) = context.drawBuffers(buffers.map { it.asGLenum() }.toJsArray())
+    override fun readBuffer(src: Int) = context.readBuffer(src.asGLenum())
+
+    override fun getInteger(pname: Int): Int {
+        val value = requireNotNull(context.getParameter(pname.asGLenum())) { "getParameter returned null for pname 0x${pname.toString(16)}!" }
+        return unsafeCast<JsNumber>(value).toInt()
+    }
 
     override fun createShader(type: Int) = shaders.allocate(context.createShader(type.asGLenum())!!)
     override fun shaderSource(shader: Int, source: String) = context.shaderSource(this.shaders.getObjectById(shader)!!, source)

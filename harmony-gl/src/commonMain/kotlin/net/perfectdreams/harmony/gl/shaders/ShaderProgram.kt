@@ -3,6 +3,7 @@ package net.perfectdreams.harmony.gl.shaders
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.textures.Texture
+import net.perfectdreams.harmony.gl.textures.TextureArray
 
 abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
     private fun getUniformLocation(name: String): Int {
@@ -15,37 +16,16 @@ abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
         return location
     }
 
-    fun uniform1f(name: String): Uniform1f {
-        return Uniform1f(this, getUniformLocation(name), name)
-    }
-
-    fun uniform1Bool(name: String): Uniform1Bool {
-        return Uniform1Bool(this, getUniformLocation(name), name)
-    }
-
-    fun uniform2f(name: String): Uniform2f {
-        return Uniform2f(this, getUniformLocation(name), name)
-    }
-
-    fun uniform3f(name: String): Uniform3f {
-        return Uniform3f(this, getUniformLocation(name), name)
-    }
-
-    fun uniform4f(name: String): Uniform4f {
-        return Uniform4f(this, getUniformLocation(name), name)
-    }
-
-    fun uniformMatrix4fv(name: String): UniformMatrix4fv {
-        return UniformMatrix4fv(this, getUniformLocation(name), name)
-    }
-
-    fun uniform1i(name: String): Uniform1i {
-        return Uniform1i(this, getUniformLocation(name), name)
-    }
-
-    fun uniform1Sampler2D(name: String): Uniform1Sampler2D {
-        return Uniform1Sampler2D(this, getUniformLocation(name), name)
-    }
+    fun uniform1f(name: String) = Uniform1f(this, getUniformLocation(name), name)
+    fun uniform1Bool(name: String) = Uniform1Bool(this, getUniformLocation(name), name)
+    fun uniform2f(name: String) = Uniform2f(this, getUniformLocation(name), name)
+    fun uniform3f(name: String) = Uniform3f(this, getUniformLocation(name), name)
+    fun uniform4f(name: String) = Uniform4f(this, getUniformLocation(name), name)
+    fun uniformMatrix4fv(name: String) = UniformMatrix4fv(this, getUniformLocation(name), name)
+    fun uniform1i(name: String) = Uniform1i(this, getUniformLocation(name), name)
+    fun uniformSampler2D(name: String) = UniformSampler2D(this, getUniformLocation(name), name)
+    fun uniformSampler2DShadow(name: String) = uniformSampler2D(name)
+    fun uniformSampler2DArray(name: String) = UniformSampler2DArray(this, getUniformLocation(name), name)
 
     abstract class Uniform(val shader: ShaderProgram, val location: Int, val name: String) {
         fun isUniformLocationInvalidAndLog(): Boolean {
@@ -112,7 +92,7 @@ abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
         }
     }
 
-    class Uniform1Sampler2D(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class UniformSampler2D(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
         fun set(slot: Int, texture: Texture) = set(slot, texture.textureId)
 
         fun set(slot: Int, textureId: Int) {
@@ -124,6 +104,23 @@ abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
 
             shader.gl.activeTexture(pos)
             shader.gl.bindTexture(GLConstants.GL_TEXTURE_2D, textureId)
+
+            shader.gl.programUniform1i(shader.programId, location, slot)
+        }
+    }
+
+    class UniformSampler2DArray(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+        fun set(slot: Int, texture: TextureArray) = set(slot, texture.textureId)
+
+        fun set(slot: Int, textureId: Int) {
+            if (isUniformLocationInvalidAndLog())
+                return
+
+            // Hacky!!!
+            val pos = slot + GLConstants.GL_TEXTURE0
+
+            shader.gl.activeTexture(pos)
+            shader.gl.bindTexture(GLConstants.GL_TEXTURE_2D_ARRAY, textureId)
 
             shader.gl.programUniform1i(shader.programId, location, slot)
         }

@@ -16,6 +16,7 @@ abstract class GLContext {
     abstract fun bufferData(target: Int, size: Long, usage: Int)
     abstract fun bufferData(target: Int, buffer: FloatArray, usage: Int)
     abstract fun bufferData(target: Int, buffer: IntArray, usage: Int)
+    abstract fun bufferData(target: Int, buffer: ByteArray, usage: Int)
     abstract fun bufferSubData(target: Int, offset: Long, buffer: FloatArray)
     fun deleteBuffer(buffer: Int) = deleteBuffers(listOf(buffer))
     abstract fun deleteBuffers(values: List<Int>)
@@ -33,6 +34,7 @@ abstract class GLContext {
     abstract fun genBuffers(): Int
     abstract fun blendFunc(src: Int, dst: Int)
     abstract fun cullFace(mode: Int)
+    abstract fun polygonOffset(factor: Float, units: Float)
     abstract fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long)
     abstract fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int)
     abstract fun enableVertexAttribArray(index: Int)
@@ -41,7 +43,10 @@ abstract class GLContext {
     abstract fun pixelStorei(pname: Int, param: Int)
     abstract fun texImage2D(target: Int, level: Int, internalFormat: Int, width: Int, height: Int, border: Int, format: Int, type: Int)
     abstract fun texImage2D(target: Int, level: Int, internalFormat: Int, border: Int, format: Int, type: Int, textureSource: TextureSource)
+    abstract fun texImage3D(target: Int, level: Int, internalFormat: Int, width: Int, height: Int, depth: Int, border: Int, format: Int, type: Int)
+    abstract fun texImage3D(target: Int, level: Int, internalFormat: Int, depth: Int, border: Int, format: Int, type: Int, textureSource: TextureSource)
     abstract fun texSubImage2D(target: Int, level: Int, xoffset: Int, yoffset: Int, width: Int, height: Int, format: Int, type: Int, textureSource: TextureSource)
+    abstract fun texSubImage3D(target: Int, level: Int, xoffset: Int, yoffset: Int, zoffset: Int, width: Int, height: Int, depth: Int, format: Int, type: Int, textureSource: TextureSource)
     abstract fun texParameteri(target: Int, pname: Int, param: Int)
     abstract fun generateMipmap(target: Int)
     abstract fun depthFunc(func: Int)
@@ -53,6 +58,10 @@ abstract class GLContext {
     abstract fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int)
     abstract fun checkFramebufferStatus(target: Int): Int
     abstract fun bindFramebuffer(target: Int, framebuffer: Int)
+    abstract fun drawBuffers(buffers: IntArray)
+    abstract fun readBuffer(src: Int)
+
+    abstract fun getInteger(pname: Int): Int
 
     abstract fun createShader(type: Int): Int
     abstract fun shaderSource(shader: Int, source: String)

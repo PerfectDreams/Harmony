@@ -16,13 +16,18 @@ import org.lwjgl.opengl.GL11.glDrawArrays
 import org.lwjgl.opengl.GL11.glDrawElements
 import org.lwjgl.opengl.GL11.glEnable
 import org.lwjgl.opengl.GL11.glGenTextures
+import org.lwjgl.opengl.GL11.glGetInteger
 import org.lwjgl.opengl.GL11.glPixelStorei
+import org.lwjgl.opengl.GL11.glPolygonOffset
+import org.lwjgl.opengl.GL11.glReadBuffer
 import org.lwjgl.opengl.GL11.glReadPixels
 import org.lwjgl.opengl.GL11.glScissor
 import org.lwjgl.opengl.GL11.glTexImage2D
 import org.lwjgl.opengl.GL11.glTexParameteri
 import org.lwjgl.opengl.GL11.glTexSubImage2D
 import org.lwjgl.opengl.GL11.glViewport
+import org.lwjgl.opengl.GL12.glTexImage3D
+import org.lwjgl.opengl.GL12.glTexSubImage3D
 import org.lwjgl.opengl.GL13.glActiveTexture
 import org.lwjgl.opengl.GL15.glBindBuffer
 import org.lwjgl.opengl.GL15.glBufferData
@@ -37,6 +42,7 @@ import org.lwjgl.opengl.GL20.glDeleteProgram
 import org.lwjgl.opengl.GL20.glDeleteShader
 import org.lwjgl.opengl.GL20.glDetachShader
 import org.lwjgl.opengl.GL20.glDisableVertexAttribArray
+import org.lwjgl.opengl.GL20.glDrawBuffers
 import org.lwjgl.opengl.GL20.glEnableVertexAttribArray
 import org.lwjgl.opengl.GL20.glGetProgramInfoLog
 import org.lwjgl.opengl.GL20.glGetProgrami
@@ -78,6 +84,13 @@ class OpenGLContext : GLContext() {
     override fun bufferData(target: Int, size: Long, usage: Int) = glBufferData(target, size, usage)
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = glBufferData(target, buffer, usage)
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = glBufferData(target, buffer, usage)
+    override fun bufferData(target: Int, buffer: ByteArray, usage: Int) {
+        // LWJGL doesn't have a ByteArray overload
+        val byteBuffer = ByteBuffer.allocateDirect(buffer.size)
+        byteBuffer.put(buffer)
+        byteBuffer.position(0)
+        glBufferData(target, byteBuffer, usage)
+    }
     override fun bufferSubData(target: Int, offset: Long, buffer: FloatArray) = glBufferSubData(target, offset, buffer)
     override fun deleteBuffers(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteBuffers(it) }
     override fun bindVertexArray(array: Int) = glBindVertexArray(array)
@@ -92,6 +105,7 @@ class OpenGLContext : GLContext() {
     override fun genBuffers() = glGenBuffers()
     override fun blendFunc(src: Int, dst: Int) = glBlendFunc(src, dst)
     override fun cullFace(mode: Int) = glCullFace(mode)
+    override fun polygonOffset(factor: Float, units: Float) = glPolygonOffset(factor, units)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = glVertexAttribPointer(index, size, type, normalized, stride, offset)
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = glVertexAttribIPointer(index, size, type, stride, offset.toLong())
     override fun enableVertexAttribArray(index: Int) = glEnableVertexAttribArray(index)
@@ -129,6 +143,56 @@ class OpenGLContext : GLContext() {
         }
     }
 
+    override fun texImage3D(target: Int, level: Int, internalFormat: Int, width: Int, height: Int, depth: Int, border: Int, format: Int, type: Int) = glTexImage3D(target, level, internalFormat, width, height, depth, border, format, type, null as ByteBuffer?)
+
+    override fun texImage3D(
+        target: Int,
+        level: Int,
+        internalFormat: Int,
+        depth: Int,
+        border: Int,
+        format: Int,
+        type: Int,
+        textureSource: TextureSource
+    ) {
+        require(depth > 0 && textureSource.height % depth == 0) { "The texture source height (${textureSource.height}) must be a multiple of the depth ($depth)!" }
+        val layerHeight = textureSource.height / depth
+
+        when (textureSource) {
+            is ByteArrayTextureSource -> {
+                val byteBuffer = ByteBuffer.allocateDirect(textureSource.pixels.size)
+                byteBuffer.put(textureSource.pixels)
+                byteBuffer.position(0)
+                glTexImage3D(target, level, internalFormat, textureSource.width, layerHeight, depth, border, format, type, byteBuffer)
+            }
+            else -> error("Unsupported image type!")
+        }
+    }
+
+    override fun texSubImage3D(
+        target: Int,
+        level: Int,
+        xoffset: Int,
+        yoffset: Int,
+        zoffset: Int,
+        width: Int,
+        height: Int,
+        depth: Int,
+        format: Int,
+        type: Int,
+        textureSource: TextureSource
+    ) {
+        when (textureSource) {
+            is ByteArrayTextureSource -> {
+                val byteBuffer = ByteBuffer.allocateDirect(textureSource.pixels.size)
+                byteBuffer.put(textureSource.pixels)
+                byteBuffer.position(0)
+                glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, byteBuffer)
+            }
+            else -> error("Unsupported image type!")
+        }
+    }
+
     override fun texSubImage2D(
         target: Int,
         level: Int,
@@ -161,6 +225,10 @@ class OpenGLContext : GLContext() {
     override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture, level)
     override fun checkFramebufferStatus(target: Int) = glCheckFramebufferStatus(target)
     override fun bindFramebuffer(target: Int, framebuffer: Int) = glBindFramebuffer(target, framebuffer)
+    override fun drawBuffers(buffers: IntArray) = glDrawBuffers(buffers)
+    override fun readBuffer(src: Int) = glReadBuffer(src)
+
+    override fun getInteger(pname: Int) = glGetInteger(pname)
 
     override fun createShader(type: Int) = glCreateShader(type)
     override fun shaderSource(shader: Int, source: String) = glShaderSource(shader, source)

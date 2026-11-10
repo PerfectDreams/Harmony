@@ -1,12 +1,26 @@
 package net.perfectdreams.harmony.gl.vertex
 
+import net.perfectdreams.harmony.gl.GLConstants.GL_BYTE
 import net.perfectdreams.harmony.gl.GLConstants.GL_FLOAT
 import net.perfectdreams.harmony.gl.GLConstants.GL_INT
+import net.perfectdreams.harmony.gl.GLConstants.GL_SHORT
+import net.perfectdreams.harmony.gl.GLConstants.GL_UNSIGNED_BYTE
+import net.perfectdreams.harmony.gl.GLConstants.GL_UNSIGNED_INT
+import net.perfectdreams.harmony.gl.GLConstants.GL_UNSIGNED_SHORT
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.vertex.VertexAttributesBuilder.Companion.getTypeSize
 
 fun buildVertexAttributes(block: VertexAttributesBuilder.() -> (Unit)): VertexAttributes {
     val builder = VertexAttributesBuilder()
     block(builder)
+
+    // Check if every type is aligned to the stride
+    val attributes = mutableListOf<VertexAttributes.Attribute>()
+    for (attribute in builder.attributes) {
+        val typeSize = getTypeSize(attribute.type)
+        require(builder.currentStride % typeSize == 0) { "Attribute ${attribute.index} is misaligned to the stride! The stride is ${builder.currentStride}, but type ${attribute.type} must be aligned to $typeSize bytes" }
+        attributes.add(VertexAttributes.Attribute(attribute.index, attribute.size, attribute.type, attribute.normalized, attribute.offset))
+    }
 
     return VertexAttributes(
         builder.currentStride,
@@ -17,6 +31,18 @@ fun buildVertexAttributes(block: VertexAttributesBuilder.() -> (Unit)): VertexAt
 }
 
 class VertexAttributesBuilder {
+    companion object {
+        fun getTypeSize(type: Int): Int {
+            return when (type) {
+                GL_FLOAT -> Float.SIZE_BYTES
+                GL_SHORT, GL_UNSIGNED_SHORT -> Short.SIZE_BYTES
+                GL_BYTE, GL_UNSIGNED_BYTE -> Byte.SIZE_BYTES
+                GL_INT, GL_UNSIGNED_INT -> Int.SIZE_BYTES
+                else -> error("I don't know how to handle attribute type $type!")
+            }
+        }
+    }
+
     data class Attribute(
         val index: Int,
         val size: Int,
@@ -32,12 +58,9 @@ class VertexAttributesBuilder {
     fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean) {
         require(attributes.none { it.index == index }) { "Attribute with index $index already exists!" }
         this.attributes.add(Attribute(index, size, type, normalized, this.currentOffset))
-        val multiply = when (type) {
-            GL_FLOAT -> Float.SIZE_BYTES
-            GL_INT -> Int.SIZE_BYTES
-            else -> error("I don't know how to handle attribute type $type!")
-        }
-        reserve(size * multiply)
+        val typeSize = getTypeSize(type)
+        require(currentOffset % typeSize == 0) { "Attribute $index is misaligned! It starts at offset ${currentOffset}, but type $type must be aligned to $typeSize bytes" }
+        reserve(size * typeSize)
     }
 
     fun vec2(index: Int) = vertexAttribPointer(index, 2, GL_FLOAT, false)
@@ -78,9 +101,9 @@ class VertexAttributes(
         for (attribute in this.attributes) {
             // stride is from the START of the current "section"!
             when (attribute.type) {
-                GL_FLOAT -> gl.vertexAttribPointer(attribute.index, attribute.size, attribute.type, attribute.normalized, this.totalSizeWithTypeSize, attribute.offset.toLong())
+                GL_FLOAT, GL_SHORT, GL_UNSIGNED_SHORT, GL_BYTE, GL_UNSIGNED_BYTE -> gl.vertexAttribPointer(attribute.index, attribute.size, attribute.type, attribute.normalized, this.totalSizeWithTypeSize, attribute.offset.toLong())
                 // YES WE NEED TO USE glVertexAttribIPointer FOR GL_INT!!!
-                GL_INT -> gl.vertexAttribIPointer(attribute.index, attribute.size, attribute.type, this.totalSizeWithTypeSize, attribute.offset)
+                GL_INT, GL_UNSIGNED_INT -> gl.vertexAttribIPointer(attribute.index, attribute.size, attribute.type, this.totalSizeWithTypeSize, attribute.offset)
                 // Technically should never happen because vertexAttribPointer already blocks it
                 else -> error("I don't know how to handle attribute type ${attribute.type}!")
             }
