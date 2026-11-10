@@ -12,7 +12,6 @@ import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
 import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
 import net.perfectdreams.harmony.gl.GPUResources
-import net.perfectdreams.harmony.gl.pipelines.CompareFunc
 import net.perfectdreams.harmony.gl.pipelines.DepthState
 import net.perfectdreams.harmony.gl.pipelines.Pipeline
 import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
@@ -298,7 +297,10 @@ fun main() {
         MemoryUtil.memFree(imageBuffer2)
     }
 
-    val framebuffer = gpu.createFramebuffer(gpu.createTexture(64, 64, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST))
+    val framebuffer = gpu.createFramebuffer(
+        gpu.createTexture(64, 64, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST),
+        null
+    )
     val texture = gpu.createTexture(
         textureSource,
         GLConstants.GL_CLAMP_TO_EDGE,
@@ -462,7 +464,7 @@ fun main() {
                             0.0f,
                             1.0f,
                             1.0f,
-                            framebuffer.texture,
+                            framebuffer.colorTexture!!,
                             1.0f,
                             1.0f,
                             1.0f,

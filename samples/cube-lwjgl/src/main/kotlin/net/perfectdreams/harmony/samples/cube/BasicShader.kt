@@ -9,5 +9,5 @@ class BasicShader(gl: GLContext, programId: Int) : ShaderProgram(gl, programId) 
     val uModel = this.uniformMatrix4fv("uModel")
     val uBlendColor = this.uniform4f("uBlendColor")
     val uCameraPosition = this.uniform3f("uCameraPosition")
-    val uTexture = this.uniform1Sampler2D("uTexture")
+    val uTexture = this.uniformSampler2D("uTexture")
 }
