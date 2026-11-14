@@ -53,7 +53,7 @@ abstract class GLContext {
     abstract fun genFramebuffers(): GLFramebuffer
     fun deleteFramebuffer(framebuffer: GLFramebuffer) = deleteFramebuffers(listOf(framebuffer))
     abstract fun deleteFramebuffers(values: List<GLFramebuffer>)
-    abstract fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture, level: Int)
+    abstract fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture?, level: Int)
     abstract fun checkFramebufferStatus(target: Int): Int
     abstract fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?)
     abstract fun drawBuffers(buffers: IntArray)

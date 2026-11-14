@@ -237,7 +237,7 @@ class OpenGLContext : GLContext() {
 
     override fun genFramebuffers() = OpenGLFramebuffer(glGenFramebuffers())
     override fun deleteFramebuffers(values: List<GLFramebuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteFramebuffers(it) }
-    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture.unwrap(), level)
+    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture?, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture?.unwrap() ?: 0, level)
     override fun checkFramebufferStatus(target: Int) = glCheckFramebufferStatus(target)
     override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = glBindFramebuffer(target, framebuffer?.unwrap() ?: 0)
     override fun drawBuffers(buffers: IntArray) = glDrawBuffers(buffers)

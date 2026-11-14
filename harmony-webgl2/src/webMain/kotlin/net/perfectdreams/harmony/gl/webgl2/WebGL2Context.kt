@@ -208,7 +208,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
             context.deleteFramebuffer(textureId.unwrap())
         }
     }
-    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture, level: Int) = context.framebufferTexture2D(target.asGLenum(), attachment.asGLenum(), textarget.asGLenum(), (texture as WebGLTexture).handle, level)
+    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture?, level: Int) = context.framebufferTexture2D(target.asGLenum(), attachment.asGLenum(), textarget.asGLenum(), texture?.unwrap(), level)
     override fun checkFramebufferStatus(target: Int) = unsafeCast<JsNumber>(context.checkFramebufferStatus(target.asGLenum())).toInt()
     override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = context.bindFramebuffer(target.asGLenum(), framebuffer?.unwrap())
     override fun drawBuffers(buffers: IntArray) = context.drawBuffers(buffers.map { it.asGLenum() }.toJsArray())
