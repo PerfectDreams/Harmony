@@ -10,7 +10,7 @@ abstract class GLContext {
     abstract fun clear(mask: Int)
     abstract fun viewport(x: Int, y: Int, width: Int, height: Int)
     abstract fun scissor(x: Int, y: Int, width: Int, height: Int)
-    abstract fun bindBuffer(target: Int, buffer: GLBuffer)
+    abstract fun bindBuffer(target: Int, buffer: GLBuffer?)
     abstract fun bufferData(target: Int, size: Long, usage: Int)
     abstract fun bufferData(target: Int, buffer: FloatArray, usage: Int)
     abstract fun bufferData(target: Int, buffer: IntArray, usage: Int)

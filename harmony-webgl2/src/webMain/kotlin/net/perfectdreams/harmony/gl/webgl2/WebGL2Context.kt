@@ -41,7 +41,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun clear(mask: Int) = context.clear(mask.asGLbitfield())
     override fun viewport(x: Int, y: Int, width: Int, height: Int) = context.viewport(x, y, width, height)
     override fun scissor(x: Int, y: Int, width: Int, height: Int) = context.scissor(x, y, width, height)
-    override fun bindBuffer(target: Int, buffer: GLBuffer) = context.bindBuffer(target.asGLenum(), buffer.unwrap())
+    override fun bindBuffer(target: Int, buffer: GLBuffer?) = context.bindBuffer(target.asGLenum(), buffer?.unwrap())
     override fun bufferData(target: Int, size: Long, usage: Int) = context.bufferData(target.asGLenum(), size.toInt(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toFloat32ArrayFast(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toInt32ArrayFast(), usage.asGLenum())

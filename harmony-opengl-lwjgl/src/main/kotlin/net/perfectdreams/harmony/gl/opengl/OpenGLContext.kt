@@ -95,7 +95,7 @@ class OpenGLContext : GLContext() {
     override fun clear(mask: Int) = glClear(mask)
     override fun viewport(x: Int, y: Int, width: Int, height: Int) = glViewport(x, y, width, height)
     override fun scissor(x: Int, y: Int, width: Int, height: Int) = glScissor(x, y, width, height)
-    override fun bindBuffer(target: Int, buffer: GLBuffer) = glBindBuffer(target, buffer.unwrap())
+    override fun bindBuffer(target: Int, buffer: GLBuffer?) = glBindBuffer(target, buffer?.unwrap() ?: 0)
     override fun bufferData(target: Int, size: Long, usage: Int) = glBufferData(target, size, usage)
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = glBufferData(target, buffer, usage)
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = glBufferData(target, buffer, usage)
