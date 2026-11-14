@@ -2,15 +2,18 @@ package net.perfectdreams.harmony.gl.shaders
 
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.GLProgram
+import net.perfectdreams.harmony.gl.GLTexture
+import net.perfectdreams.harmony.gl.GLUniformLocation
 import net.perfectdreams.harmony.gl.textures.Texture
 import net.perfectdreams.harmony.gl.textures.TextureArray
 
-abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
-    private fun getUniformLocation(name: String): Int {
+abstract class ShaderProgram(val gl: GLContext, val programId: GLProgram) {
+    private fun getUniformLocation(name: String): GLUniformLocation? {
         val location = gl.getUniformLocation(programId, name)
-        if (location == -1) {
+        if (location == null) {
             println("Program $programId does not have uniform \"$name\"!")
-            return -1
+            return null
         }
 
         return location
@@ -27,77 +30,64 @@ abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
     fun uniformSampler2DShadow(name: String) = uniformSampler2D(name)
     fun uniformSampler2DArray(name: String) = UniformSampler2DArray(this, getUniformLocation(name), name)
 
-    abstract class Uniform(val shader: ShaderProgram, val location: Int, val name: String) {
-        fun isUniformLocationInvalidAndLog(): Boolean {
-            if (this.location == -1) {
+    abstract class Uniform(val shader: ShaderProgram, val location: GLUniformLocation?, val name: String) {
+        fun isUniformLocationInvalidAndLog(): GLUniformLocation? {
+            if (this.location == null) {
                 println("Program ${shader.programId} does not have uniform \"$name\"! Ignoring set...")
-                return true
+                return null
             }
 
-            return false
+            return location
         }
     }
 
-    class Uniform1f(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class Uniform1f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniform1f(shader.programId, location, x)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniform1f(location, x)
         }
     }
 
-    class Uniform2f(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class Uniform2f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float, y: Float) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniform2f(shader.programId, location, x, y)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniform2f(location, x, y)
         }
     }
 
-    class Uniform3f(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class Uniform3f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float, y: Float, z: Float) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniform3f(shader.programId, location, x, y, z)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniform3f(location, x, y, z)
         }
     }
 
-    class Uniform4f(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class Uniform4f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float, y: Float, z: Float, w: Float) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniform4f(shader.programId, location, x, y, z, w)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniform4f(location, x, y, z, w)
         }
     }
 
-    class UniformMatrix4fv(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class UniformMatrix4fv(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(value: FloatArray) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniformMatrix4fv(shader.programId, location, false, value)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniformMatrix4fv(location, false, value)
         }
     }
 
-    class Uniform1i(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class Uniform1i(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Int) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniform1i(shader.programId, location, x)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniform1i(location, x)
         }
     }
 
-    class UniformSampler2D(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class UniformSampler2D(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(slot: Int, texture: Texture) = set(slot, texture.textureId)
 
-        fun set(slot: Int, textureId: Int) {
-            if (isUniformLocationInvalidAndLog())
-                return
+        fun set(slot: Int, textureId: GLTexture) {
+            val location = isUniformLocationInvalidAndLog() ?: return
 
             // Hacky!!!
             val pos = slot + GLConstants.GL_TEXTURE0
@@ -105,16 +95,15 @@ abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
             shader.gl.activeTexture(pos)
             shader.gl.bindTexture(GLConstants.GL_TEXTURE_2D, textureId)
 
-            shader.gl.programUniform1i(shader.programId, location, slot)
+            shader.gl.uniform1i(location, slot)
         }
     }
 
-    class UniformSampler2DArray(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class UniformSampler2DArray(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(slot: Int, texture: TextureArray) = set(slot, texture.textureId)
 
-        fun set(slot: Int, textureId: Int) {
-            if (isUniformLocationInvalidAndLog())
-                return
+        fun set(slot: Int, textureId: GLTexture) {
+            val location = isUniformLocationInvalidAndLog() ?: return
 
             // Hacky!!!
             val pos = slot + GLConstants.GL_TEXTURE0
@@ -122,26 +111,19 @@ abstract class ShaderProgram(val gl: GLContext, val programId: Int) {
             shader.gl.activeTexture(pos)
             shader.gl.bindTexture(GLConstants.GL_TEXTURE_2D_ARRAY, textureId)
 
-            shader.gl.programUniform1i(shader.programId, location, slot)
+            shader.gl.uniform1i(location, slot)
         }
     }
 
-    class Uniform1Bool(shader: ShaderProgram, location: Int, name: String) : Uniform(shader, location, name) {
+    class Uniform1Bool(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Boolean) {
-            if (isUniformLocationInvalidAndLog())
-                return
-
-            shader.gl.programUniform1i(shader.programId, location, if (x) 1 else 0)
+            val location = isUniformLocationInvalidAndLog() ?: return
+            shader.gl.uniform1i(location, if (x) 1 else 0)
         }
     }
 }
 
 inline fun <T : ShaderProgram> T.withProgram(block: T.() -> (Unit)) {
-    val previous = gl.activeProgram
     gl.useProgram(this.programId)
-    try {
-        block.invoke(this)
-    } finally {
-        gl.useProgram(previous)
-    }
+    block.invoke(this)
 }

@@ -4,34 +4,32 @@ package net.perfectdreams.harmony.gl
  * Abstractions for OpenGL-like renderers
  */
 abstract class GLContext {
-    var activeProgram = 0
-
     abstract fun enable(target: Int)
     abstract fun disable(target: Int)
     abstract fun clearColor(red: Float, green: Float, blue: Float, alpha: Float)
     abstract fun clear(mask: Int)
     abstract fun viewport(x: Int, y: Int, width: Int, height: Int)
     abstract fun scissor(x: Int, y: Int, width: Int, height: Int)
-    abstract fun bindBuffer(target: Int, buffer: Int)
+    abstract fun bindBuffer(target: Int, buffer: GLBuffer)
     abstract fun bufferData(target: Int, size: Long, usage: Int)
     abstract fun bufferData(target: Int, buffer: FloatArray, usage: Int)
     abstract fun bufferData(target: Int, buffer: IntArray, usage: Int)
     abstract fun bufferData(target: Int, buffer: ByteArray, usage: Int)
     abstract fun bufferSubData(target: Int, offset: Long, buffer: FloatArray)
-    fun deleteBuffer(buffer: Int) = deleteBuffers(listOf(buffer))
-    abstract fun deleteBuffers(values: List<Int>)
-    abstract fun bindVertexArray(array: Int)
-    fun deleteVertexArray(array: Int) = deleteVertexArrays(listOf(array))
-    abstract fun deleteVertexArrays(values: List<Int>)
+    fun deleteBuffer(buffer: GLBuffer) = deleteBuffers(listOf(buffer))
+    abstract fun deleteBuffers(values: List<GLBuffer>)
+    abstract fun bindVertexArray(array: GLVertexArrayObject?)
+    fun deleteVertexArray(array: GLVertexArrayObject) = deleteVertexArrays(listOf(array))
+    abstract fun deleteVertexArrays(values: List<GLVertexArrayObject>)
     abstract fun drawArrays(mode: Int, first: Int, count: Int)
     abstract fun drawElements(mode: Int, count: Int, type: Int, offset: Long)
-    abstract fun genTextures(): Int
-    abstract fun bindTexture(target: Int, texture: Int)
+    abstract fun genTextures(): GLTexture
+    abstract fun bindTexture(target: Int, texture: GLTexture?)
     abstract fun activeTexture(texture: Int)
-    fun deleteTexture(texture: Int) = deleteTextures(listOf(texture))
-    abstract fun deleteTextures(values: List<Int>)
-    abstract fun genVertexArrays(): Int
-    abstract fun genBuffers(): Int
+    fun deleteTexture(texture: GLTexture) = deleteTextures(listOf(texture))
+    abstract fun deleteTextures(values: List<GLTexture>)
+    abstract fun genVertexArrays(): GLVertexArrayObject
+    abstract fun genBuffers(): GLBuffer
     abstract fun blendFunc(src: Int, dst: Int)
     abstract fun cullFace(mode: Int)
     abstract fun polygonOffset(factor: Float, units: Float)
@@ -52,38 +50,37 @@ abstract class GLContext {
     abstract fun depthFunc(func: Int)
     abstract fun depthMask(flag: Boolean)
 
-    abstract fun genFramebuffers(): Int
-    fun deleteFramebuffer(framebuffer: Int) = deleteFramebuffers(listOf(framebuffer))
-    abstract fun deleteFramebuffers(values: List<Int>)
-    abstract fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int)
+    abstract fun genFramebuffers(): GLFramebuffer
+    fun deleteFramebuffer(framebuffer: GLFramebuffer) = deleteFramebuffers(listOf(framebuffer))
+    abstract fun deleteFramebuffers(values: List<GLFramebuffer>)
+    abstract fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture, level: Int)
     abstract fun checkFramebufferStatus(target: Int): Int
-    abstract fun bindFramebuffer(target: Int, framebuffer: Int)
+    abstract fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?)
     abstract fun drawBuffers(buffers: IntArray)
     abstract fun readBuffer(src: Int)
 
     abstract fun getInteger(pname: Int): Int
 
-    abstract fun createShader(type: Int): Int
-    abstract fun shaderSource(shader: Int, source: String)
-    abstract fun compileShader(shader: Int)
-    abstract fun getShaderi(shader: Int, pname: Int): Int
-    abstract fun getShaderInfoLog(shader: Int, maxLength: Int): String
-    abstract fun deleteShader(shader: Int)
-    abstract fun createProgram(): Int
-    abstract fun attachShader(program: Int, shader: Int)
-    abstract fun detachShader(program: Int, shader: Int)
-    abstract fun linkProgram(program: Int)
-    abstract fun getProgrami(program: Int, pname: Int): Int
-    abstract fun getProgramInfoLog(program: Int, maxLength: Int): String
-    abstract fun useProgram(program: Int)
-    abstract fun deleteProgram(program: Int)
-    fun checkActiveProgram(program: Int) = check(this.activeProgram == program) { "We want $program to be bound, but the current active program is ${this.activeProgram}!" }
+    abstract fun createShader(type: Int): GLShader
+    abstract fun shaderSource(shader: GLShader, source: String)
+    abstract fun compileShader(shader: GLShader)
+    abstract fun getShaderi(shader: GLShader, pname: Int): Int
+    abstract fun getShaderInfoLog(shader: GLShader, maxLength: Int): String
+    abstract fun deleteShader(shader: GLShader)
+    abstract fun createProgram(): GLProgram
+    abstract fun attachShader(program: GLProgram, shader: GLShader)
+    abstract fun detachShader(program: GLProgram, shader: GLShader)
+    abstract fun linkProgram(program: GLProgram)
+    abstract fun getProgrami(program: GLProgram, pname: Int): Int
+    abstract fun getProgramInfoLog(program: GLProgram, maxLength: Int): String
+    abstract fun useProgram(program: GLProgram?)
+    abstract fun deleteProgram(program: GLProgram)
 
-    abstract fun getUniformLocation(program: Int, name: String): Int
-    abstract fun programUniform1i(program: Int, location: Int, x: Int)
-    abstract fun programUniform1f(program: Int, location: Int, x: Float)
-    abstract fun programUniform2f(program: Int, location: Int, x: Float, y: Float)
-    abstract fun programUniform3f(program: Int, location: Int, x: Float, y: Float, z: Float)
-    abstract fun programUniform4f(program: Int, location: Int, x: Float, y: Float, z: Float, w: Float)
-    abstract fun programUniformMatrix4fv(program: Int, location: Int, transpose: Boolean, value: FloatArray)
+    abstract fun getUniformLocation(program: GLProgram, name: String): GLUniformLocation?
+    abstract fun uniform1i(location: GLUniformLocation, x: Int)
+    abstract fun uniform1f(location: GLUniformLocation, x: Float)
+    abstract fun uniform2f(location: GLUniformLocation, x: Float, y: Float)
+    abstract fun uniform3f(location: GLUniformLocation, x: Float, y: Float, z: Float)
+    abstract fun uniform4f(location: GLUniformLocation, x: Float, y: Float, z: Float, w: Float)
+    abstract fun uniformMatrix4fv(location: GLUniformLocation, transpose: Boolean, value: FloatArray)
 }

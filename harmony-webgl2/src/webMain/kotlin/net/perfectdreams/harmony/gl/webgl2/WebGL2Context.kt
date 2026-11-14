@@ -5,8 +5,15 @@ import js.buffer.ArrayBufferLike
 import js.reflect.unsafeCast
 import js.typedarrays.Uint8Array
 import net.perfectdreams.harmony.gl.ByteArrayTextureSource
+import net.perfectdreams.harmony.gl.GLBuffer
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.GLFramebuffer
+import net.perfectdreams.harmony.gl.GLProgram
+import net.perfectdreams.harmony.gl.GLShader
+import net.perfectdreams.harmony.gl.GLTexture
+import net.perfectdreams.harmony.gl.GLUniformLocation
+import net.perfectdreams.harmony.gl.GLVertexArrayObject
 import net.perfectdreams.harmony.gl.TextureSource
 import net.perfectdreams.harmony.wasm.toArrayBufferFast
 import net.perfectdreams.harmony.wasm.toByteArrayFast
@@ -19,41 +26,14 @@ fun Int.asGLenum() = unsafeCast<GLenum>(this)
 fun Int.asGLbitfield() = unsafeCast<GLbitfield>(this)
 fun Int.asGLuint() = unsafeCast<GLuint>(this)
 
-// WebGL2 returns typed objects, but our interface expects raw values
-// Because I'm too lazy to create a proper typed interface, we'll for now just convert objects into ints
-private class ObjectStorage<T> {
-    private val object2id = mutableMapOf<T, Int>()
-    private val id2object = mutableMapOf<Int, T>()
-    // We start at 1 because OpenGL uses 0 for "default"
-    var currentId = 1
-
-    fun allocate(value: T): Int {
-        if (this.object2id.containsKey(value)) {
-            return this.object2id[value]!!
-        }
-
-        val newId = this.currentId++
-        this.object2id[value] = newId
-        this.id2object[newId] = value
-        return newId
-    }
-
-    fun getObjectById(id: Int) = this.id2object[id]
-
-    fun deleteById(id: Int) {
-        this.object2id.remove(this.id2object[id])
-        this.id2object.remove(id)
-    }
-}
-
 class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
-    private val textures = ObjectStorage<WebGLTexture>()
-    private val vertexArrayObjects = ObjectStorage<WebGLVertexArrayObject>()
-    private val buffers = ObjectStorage<WebGLBuffer>()
-    private val shaders = ObjectStorage<WebGLShader>()
-    private val programs = ObjectStorage<WebGLProgram>()
-    private val framebuffers = ObjectStorage<WebGLFramebuffer>()
-    private val uniformLocations = ObjectStorage<WebGLUniformLocation>()
+    private fun GLTexture.unwrap(): web.gl.WebGLTexture = (this as WebGLTexture).handle
+    private fun GLProgram.unwrap(): web.gl.WebGLProgram = (this as WebGLProgram).handle
+    private fun GLShader.unwrap(): web.gl.WebGLShader = (this as WebGLShader).handle
+    private fun GLUniformLocation.unwrap(): web.gl.WebGLUniformLocation = (this as WebGLUniformLocation).handle
+    private fun GLBuffer.unwrap(): web.gl.WebGLBuffer = (this as WebGLBuffer).handle
+    private fun GLVertexArrayObject.unwrap(): web.gl.WebGLVertexArrayObject = (this as WebGLVertexArrayObject).handle
+    private fun GLFramebuffer.unwrap(): web.gl.WebGLFramebuffer = (this as WebGLFramebuffer).handle
 
     override fun enable(target: Int) = context.enable(target.asGLenum())
     override fun disable(target: Int) = context.disable(target.asGLenum())
@@ -61,41 +41,38 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun clear(mask: Int) = context.clear(mask.asGLbitfield())
     override fun viewport(x: Int, y: Int, width: Int, height: Int) = context.viewport(x, y, width, height)
     override fun scissor(x: Int, y: Int, width: Int, height: Int) = context.scissor(x, y, width, height)
-    override fun bindBuffer(target: Int, buffer: Int) = context.bindBuffer(target.asGLenum(), this.buffers.getObjectById(buffer))
+    override fun bindBuffer(target: Int, buffer: GLBuffer) = context.bindBuffer(target.asGLenum(), buffer.unwrap())
     override fun bufferData(target: Int, size: Long, usage: Int) = context.bufferData(target.asGLenum(), size.toInt(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toFloat32ArrayFast(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toInt32ArrayFast(), usage.asGLenum())
     override fun bufferData(target: Int, buffer: ByteArray, usage: Int) = context.bufferData(target.asGLenum(), buffer.toArrayBufferFast(), usage.asGLenum())
 
     override fun bufferSubData(target: Int, offset: Long, buffer: FloatArray) = context.bufferSubData(target.asGLenum(), offset.toInt(), buffer.toFloat32ArrayFast())
-    override fun deleteBuffers(values: List<Int>) {
+    override fun deleteBuffers(values: List<GLBuffer>) {
         for (bufferId in values) {
-            context.deleteBuffer(buffers.getObjectById(bufferId))
-            buffers.deleteById(bufferId)
+            context.deleteBuffer(bufferId.unwrap())
         }
     }
-    override fun bindVertexArray(array: Int) = context.bindVertexArray(this.vertexArrayObjects.getObjectById(array))
-    override fun deleteVertexArrays(values: List<Int>) {
+    override fun bindVertexArray(array: GLVertexArrayObject?) = context.bindVertexArray(array?.unwrap())
+    override fun deleteVertexArrays(values: List<GLVertexArrayObject>) {
         for (vertexArrayId in values) {
-            context.deleteVertexArray(vertexArrayObjects.getObjectById(vertexArrayId))
-            vertexArrayObjects.deleteById(vertexArrayId)
+            context.deleteVertexArray(vertexArrayId.unwrap())
         }
     }
     override fun drawArrays(mode: Int, first: Int, count: Int) = context.drawArrays(mode.asGLenum(), first, count)
     override fun drawElements(mode: Int, count: Int, type: Int, offset: Long) = context.drawElements(mode.asGLenum(), count, type.asGLenum(), offset.toInt())
-    override fun genTextures() = textures.allocate(context.createTexture())
-    override fun bindTexture(target: Int, texture: Int) = context.bindTexture(target.asGLenum(), textures.getObjectById(texture))
+    override fun genTextures() = WebGLTexture(context.createTexture())
+    override fun bindTexture(target: Int, texture: GLTexture?) = context.bindTexture(target.asGLenum(), texture?.unwrap())
     override fun activeTexture(texture: Int) = context.activeTexture(texture.asGLenum())
-    override fun deleteTextures(values: List<Int>) {
+    override fun deleteTextures(values: List<GLTexture>) {
         if (values.isNotEmpty()) {
             for (textureId in values) {
-                context.deleteTexture(textures.getObjectById(textureId))
-                textures.deleteById(textureId)
+                context.deleteTexture((textureId as WebGLTexture).handle)
             }
         }
     }
-    override fun genVertexArrays() = this.vertexArrayObjects.allocate(context.createVertexArray())
-    override fun genBuffers() = this.buffers.allocate(context.createBuffer())
+    override fun genVertexArrays() = WebGLVertexArrayObject(context.createVertexArray())
+    override fun genBuffers() = WebGLBuffer(context.createBuffer())
     override fun blendFunc(src: Int, dst: Int) = context.blendFunc(src.asGLenum(), dst.asGLenum())
     override fun cullFace(mode: Int) = context.cullFace(mode.asGLenum())
     override fun polygonOffset(factor: Float, units: Float) = context.polygonOffset(factor, units)
@@ -225,18 +202,15 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun depthFunc(func: Int) = context.depthFunc(func.asGLenum())
     override fun depthMask(flag: Boolean) = context.depthMask(flag)
 
-    override fun genFramebuffers() = this.framebuffers.allocate(context.createFramebuffer())
-    override fun deleteFramebuffers(values: List<Int>) {
-        if (values.isNotEmpty()) {
-            for (textureId in values) {
-                context.deleteFramebuffer(framebuffers.getObjectById(textureId))
-                framebuffers.deleteById(textureId)
-            }
+    override fun genFramebuffers() = WebGLFramebuffer(context.createFramebuffer())
+    override fun deleteFramebuffers(values: List<GLFramebuffer>) {
+        for (textureId in values) {
+            context.deleteFramebuffer(textureId.unwrap())
         }
     }
-    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int) = context.framebufferTexture2D(target.asGLenum(), attachment.asGLenum(), textarget.asGLenum(), textures.getObjectById(texture), level)
+    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture, level: Int) = context.framebufferTexture2D(target.asGLenum(), attachment.asGLenum(), textarget.asGLenum(), (texture as WebGLTexture).handle, level)
     override fun checkFramebufferStatus(target: Int) = unsafeCast<JsNumber>(context.checkFramebufferStatus(target.asGLenum())).toInt()
-    override fun bindFramebuffer(target: Int, framebuffer: Int) = context.bindFramebuffer(target.asGLenum(), this.framebuffers.getObjectById(framebuffer))
+    override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = context.bindFramebuffer(target.asGLenum(), framebuffer?.unwrap())
     override fun drawBuffers(buffers: IntArray) = context.drawBuffers(buffers.map { it.asGLenum() }.toJsArray())
     override fun readBuffer(src: Int) = context.readBuffer(src.asGLenum())
 
@@ -245,76 +219,63 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         return unsafeCast<JsNumber>(value).toInt()
     }
 
-    override fun createShader(type: Int) = shaders.allocate(context.createShader(type.asGLenum())!!)
-    override fun shaderSource(shader: Int, source: String) = context.shaderSource(this.shaders.getObjectById(shader)!!, source)
-    override fun compileShader(shader: Int) = context.compileShader(this.shaders.getObjectById(shader)!!)
-    override fun getShaderi(shader: Int, pname: Int): Int {
-        val r = context.getShaderParameter(this.shaders.getObjectById(shader)!!, pname.asGLenum()) as JsBoolean
+    override fun createShader(type: Int) = WebGLShader(context.createShader(type.asGLenum())!!)
+    override fun shaderSource(shader: GLShader, source: String) = context.shaderSource(shader.unwrap(), source)
+    override fun compileShader(shader: GLShader) = context.compileShader(shader.unwrap())
+    override fun getShaderi(shader: GLShader, pname: Int): Int {
+        val r = context.getShaderParameter(shader.unwrap(), pname.asGLenum()) as JsBoolean
         return if (r.toBoolean())
             GLConstants.GL_TRUE
         else
             GLConstants.GL_FALSE
     }
 
-    override fun getShaderInfoLog(shader: Int, maxLength: Int): String = context.getShaderInfoLog(this.shaders.getObjectById(shader)!!)?.take(maxLength) ?: ""
-    override fun deleteShader(shader: Int) {
-        context.deleteShader(this.shaders.getObjectById(shader)!!)
-        this.shaders.deleteById(shader)
+    override fun getShaderInfoLog(shader: GLShader, maxLength: Int): String = context.getShaderInfoLog(shader.unwrap())?.take(maxLength) ?: ""
+    override fun deleteShader(shader: GLShader) = context.deleteShader(shader.unwrap())
+    override fun createProgram() = WebGLProgram(context.createProgram())
+    override fun deleteProgram(program: GLProgram) {
+        context.deleteProgram(program.unwrap())
     }
-    override fun createProgram() = this.programs.allocate(context.createProgram())
-    override fun deleteProgram(program: Int) {
-        context.deleteProgram(this.programs.getObjectById(program))
-        this.programs.deleteById(program)
-    }
-    override fun attachShader(program: Int, shader: Int) = context.attachShader(programs.getObjectById(program)!!, this.shaders.getObjectById(shader)!!)
-    override fun detachShader(program: Int, shader: Int) = context.detachShader(programs.getObjectById(program)!!, this.shaders.getObjectById(shader)!!)
-    override fun linkProgram(program: Int) = context.linkProgram(programs.getObjectById(program)!!)
-    override fun getProgrami(program: Int, pname: Int): Int {
-        val r = context.getProgramParameter(programs.getObjectById(program)!!, pname.asGLenum()) as JsBoolean
+    override fun attachShader(program: GLProgram, shader: GLShader) = context.attachShader(program.unwrap(), shader.unwrap())
+    override fun detachShader(program: GLProgram, shader: GLShader) = context.detachShader(program.unwrap(), shader.unwrap())
+    override fun linkProgram(program: GLProgram) = context.linkProgram(program.unwrap())
+    override fun getProgrami(program: GLProgram, pname: Int): Int {
+        val r = context.getProgramParameter(program.unwrap(), pname.asGLenum()) as JsBoolean
         return if (r.toBoolean())
             GLConstants.GL_TRUE
         else
             GLConstants.GL_FALSE
     }
-    override fun getProgramInfoLog(program: Int, maxLength: Int): String = context.getProgramInfoLog(programs.getObjectById(program)!!)?.take(maxLength) ?: ""
-    override fun useProgram(program: Int) {
-        this.activeProgram = program
-        context.useProgram(programs.getObjectById(program))
+    override fun getProgramInfoLog(program: GLProgram, maxLength: Int): String = context.getProgramInfoLog(program.unwrap())?.take(maxLength) ?: ""
+    override fun useProgram(program: GLProgram?) = context.useProgram(program?.unwrap())
+
+    override fun getUniformLocation(program: GLProgram, name: String): GLUniformLocation? {
+        val program = program.unwrap()
+        val uniformLocation = context.getUniformLocation(program, name) ?: return null
+        return WebGLUniformLocation(uniformLocation)
     }
 
-    override fun getUniformLocation(program: Int, name: String): Int {
-        val program = programs.getObjectById(program) ?: return -1
-        val uniformLocation = context.getUniformLocation(program, name) ?: return -1
-        return this.uniformLocations.allocate(uniformLocation)
+    override fun uniform1i(location: GLUniformLocation, x: Int) {
+        context.uniform1i(location.unwrap(), x)
     }
 
-    override fun programUniform1i(program: Int, location: Int, x: Int) {
-        checkActiveProgram(program)
-        context.uniform1i(this.uniformLocations.getObjectById(location), x)
+    override fun uniform1f(location: GLUniformLocation, x: Float) {
+        context.uniform1f(location.unwrap(), x)
     }
 
-    override fun programUniform1f(program: Int, location: Int, x: Float) {
-        checkActiveProgram(program)
-        context.uniform1f(this.uniformLocations.getObjectById(location), x)
+    override fun uniform2f(location: GLUniformLocation, x: Float, y: Float) {
+        context.uniform2f(location.unwrap(), x, y)
     }
 
-    override fun programUniform2f(program: Int, location: Int, x: Float, y: Float) {
-        checkActiveProgram(program)
-        context.uniform2f(this.uniformLocations.getObjectById(location), x, y)
+    override fun uniform3f(location: GLUniformLocation, x: Float, y: Float, z: Float) {
+        context.uniform3f(location.unwrap(), x, y, z)
     }
 
-    override fun programUniform3f(program: Int, location: Int, x: Float, y: Float, z: Float) {
-        checkActiveProgram(program)
-        context.uniform3f(this.uniformLocations.getObjectById(location), x, y, z)
+    override fun uniform4f(location: GLUniformLocation, x: Float, y: Float, z: Float, w: Float) {
+        context.uniform4f(location.unwrap(), x, y, z, w)
     }
 
-    override fun programUniform4f(program: Int, location: Int, x: Float, y: Float, z: Float, w: Float) {
-        checkActiveProgram(program)
-        context.uniform4f(this.uniformLocations.getObjectById(location), x, y, z, w)
-    }
-
-    override fun programUniformMatrix4fv(program: Int, location: Int, transpose: Boolean, value: FloatArray) {
-        checkActiveProgram(program)
-        context.uniformMatrix4fv(this.uniformLocations.getObjectById(location), transpose, value.toFloat32ArrayFast())
+    override fun uniformMatrix4fv(location: GLUniformLocation, transpose: Boolean, value: FloatArray) {
+        context.uniformMatrix4fv(location.unwrap(), transpose, value.toFloat32ArrayFast())
     }
 }

@@ -1,7 +1,14 @@
 package net.perfectdreams.harmony.gl.opengl
 
 import net.perfectdreams.harmony.gl.ByteArrayTextureSource
+import net.perfectdreams.harmony.gl.GLBuffer
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.GLFramebuffer
+import net.perfectdreams.harmony.gl.GLProgram
+import net.perfectdreams.harmony.gl.GLShader
+import net.perfectdreams.harmony.gl.GLTexture
+import net.perfectdreams.harmony.gl.GLUniformLocation
+import net.perfectdreams.harmony.gl.GLVertexArrayObject
 import net.perfectdreams.harmony.gl.TextureSource
 import org.lwjgl.opengl.GL11.glBindTexture
 import org.lwjgl.opengl.GL11.glBlendFunc
@@ -74,13 +81,21 @@ import java.nio.ByteBuffer
 import java.nio.IntBuffer
 
 class OpenGLContext : GLContext() {
+    private fun GLTexture.unwrap(): Int = (this as OpenGLTexture).id
+    private fun GLProgram.unwrap(): Int = (this as OpenGLProgram).id
+    private fun GLBuffer.unwrap(): Int = (this as OpenGLBuffer).id
+    private fun GLFramebuffer.unwrap(): Int = (this as OpenGLFramebuffer).id
+    private fun GLShader.unwrap(): Int = (this as OpenGLShader).id
+    private fun GLUniformLocation.unwrap(): Int = (this as OpenGLUniformLocation).id
+    private fun GLVertexArrayObject.unwrap(): Int = (this as OpenGLVertexArrayObject).id
+
     override fun enable(target: Int) = glEnable(target)
     override fun disable(target: Int) = glDisable(target)
     override fun clearColor(red: Float, green: Float, blue: Float, alpha: Float) = glClearColor(red, green, blue, alpha)
     override fun clear(mask: Int) = glClear(mask)
     override fun viewport(x: Int, y: Int, width: Int, height: Int) = glViewport(x, y, width, height)
     override fun scissor(x: Int, y: Int, width: Int, height: Int) = glScissor(x, y, width, height)
-    override fun bindBuffer(target: Int, buffer: Int) = glBindBuffer(target, buffer)
+    override fun bindBuffer(target: Int, buffer: GLBuffer) = glBindBuffer(target, buffer.unwrap())
     override fun bufferData(target: Int, size: Long, usage: Int) = glBufferData(target, size, usage)
     override fun bufferData(target: Int, buffer: FloatArray, usage: Int) = glBufferData(target, buffer, usage)
     override fun bufferData(target: Int, buffer: IntArray, usage: Int) = glBufferData(target, buffer, usage)
@@ -92,17 +107,17 @@ class OpenGLContext : GLContext() {
         glBufferData(target, byteBuffer, usage)
     }
     override fun bufferSubData(target: Int, offset: Long, buffer: FloatArray) = glBufferSubData(target, offset, buffer)
-    override fun deleteBuffers(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteBuffers(it) }
-    override fun bindVertexArray(array: Int) = glBindVertexArray(array)
-    override fun deleteVertexArrays(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteVertexArrays(it) }
+    override fun deleteBuffers(values: List<GLBuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteBuffers(it) }
+    override fun bindVertexArray(array: GLVertexArrayObject?) = glBindVertexArray(array?.unwrap() ?: 0)
+    override fun deleteVertexArrays(values: List<GLVertexArrayObject>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteVertexArrays(it) }
     override fun drawArrays(mode: Int, first: Int, count: Int) = glDrawArrays(mode, first, count)
     override fun drawElements(mode: Int, count: Int, type: Int, offset: Long) = glDrawElements(mode, count, type, offset)
-    override fun genTextures() = glGenTextures()
-    override fun bindTexture(target: Int, texture: Int) = glBindTexture(target, texture)
+    override fun genTextures() = OpenGLTexture(glGenTextures())
+    override fun bindTexture(target: Int, texture: GLTexture?) = glBindTexture(target, texture?.unwrap() ?: 0)
     override fun activeTexture(texture: Int) = glActiveTexture(texture)
-    override fun deleteTextures(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteTextures(it) }
-    override fun genVertexArrays() = glGenVertexArrays()
-    override fun genBuffers() = glGenBuffers()
+    override fun deleteTextures(values: List<GLTexture>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteTextures(it) }
+    override fun genVertexArrays() = OpenGLVertexArrayObject(glGenVertexArrays())
+    override fun genBuffers() = OpenGLBuffer(glGenBuffers())
     override fun blendFunc(src: Int, dst: Int) = glBlendFunc(src, dst)
     override fun cullFace(mode: Int) = glCullFace(mode)
     override fun polygonOffset(factor: Float, units: Float) = glPolygonOffset(factor, units)
@@ -220,65 +235,45 @@ class OpenGLContext : GLContext() {
     override fun depthFunc(func: Int) = glDepthFunc(func)
     override fun depthMask(flag: Boolean) = glDepthMask(flag)
 
-    override fun genFramebuffers() = glGenFramebuffers()
-    override fun deleteFramebuffers(values: List<Int>) = stackAllocateIntsAndCall(values) { glDeleteFramebuffers(it) }
-    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: Int, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture, level)
+    override fun genFramebuffers() = OpenGLFramebuffer(glGenFramebuffers())
+    override fun deleteFramebuffers(values: List<GLFramebuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteFramebuffers(it) }
+    override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture.unwrap(), level)
     override fun checkFramebufferStatus(target: Int) = glCheckFramebufferStatus(target)
-    override fun bindFramebuffer(target: Int, framebuffer: Int) = glBindFramebuffer(target, framebuffer)
+    override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = glBindFramebuffer(target, framebuffer?.unwrap() ?: 0)
     override fun drawBuffers(buffers: IntArray) = glDrawBuffers(buffers)
     override fun readBuffer(src: Int) = glReadBuffer(src)
 
     override fun getInteger(pname: Int) = glGetInteger(pname)
 
-    override fun createShader(type: Int) = glCreateShader(type)
-    override fun shaderSource(shader: Int, source: String) = glShaderSource(shader, source)
-    override fun compileShader(shader: Int) = glCompileShader(shader)
-    override fun getShaderi(shader: Int, pname: Int) = glGetShaderi(shader, pname)
-    override fun getShaderInfoLog(shader: Int, maxLength: Int): String = glGetShaderInfoLog(shader, maxLength)
-    override fun deleteShader(shader: Int) = glDeleteShader(shader)
-    override fun createProgram() = glCreateProgram()
-    override fun attachShader(program: Int, shader: Int) = glAttachShader(program, shader)
-    override fun detachShader(program: Int, shader: Int) = glDetachShader(program, shader)
-    override fun linkProgram(program: Int) = glLinkProgram(program)
-    override fun getProgrami(program: Int, pname: Int) = glGetProgrami(program, pname)
-    override fun getProgramInfoLog(program: Int, maxLength: Int): String = glGetProgramInfoLog(program, maxLength)
-    override fun useProgram(program: Int) {
-        this.activeProgram = program
-        glUseProgram(program)
+    override fun createShader(type: Int) = OpenGLShader(glCreateShader(type))
+    override fun shaderSource(shader: GLShader, source: String) = glShaderSource(shader.unwrap(), source)
+    override fun compileShader(shader: GLShader) = glCompileShader(shader.unwrap())
+    override fun getShaderi(shader: GLShader, pname: Int) = glGetShaderi(shader.unwrap(), pname)
+    override fun getShaderInfoLog(shader: GLShader, maxLength: Int): String = glGetShaderInfoLog(shader.unwrap(), maxLength)
+    override fun deleteShader(shader: GLShader) = glDeleteShader(shader.unwrap())
+    override fun createProgram() = OpenGLProgram(glCreateProgram())
+    override fun attachShader(program: GLProgram, shader: GLShader) = glAttachShader(program.unwrap(), shader.unwrap())
+    override fun detachShader(program: GLProgram, shader: GLShader) = glDetachShader(program.unwrap(), shader.unwrap())
+    override fun linkProgram(program: GLProgram) = glLinkProgram(program.unwrap())
+    override fun getProgrami(program: GLProgram, pname: Int) = glGetProgrami(program.unwrap(), pname)
+    override fun getProgramInfoLog(program: GLProgram, maxLength: Int): String = glGetProgramInfoLog(program.unwrap(), maxLength)
+    override fun useProgram(program: GLProgram?) = glUseProgram(program?.unwrap() ?: 0)
+
+    override fun deleteProgram(program: GLProgram) = glDeleteProgram(program.unwrap())
+
+    override fun getUniformLocation(program: GLProgram, name: String): GLUniformLocation? {
+        val location = glGetUniformLocation(program.unwrap(), name)
+        if (location == -1)
+            return null
+        return OpenGLUniformLocation(location)
     }
 
-    override fun deleteProgram(program: Int) = glDeleteProgram(program)
-
-    override fun getUniformLocation(program: Int, name: String) = glGetUniformLocation(program, name)
-    override fun programUniform1i(program: Int, location: Int, x: Int) {
-        checkActiveProgram(program)
-        glUniform1i(location, x)
-    }
-
-    override fun programUniform1f(program: Int, location: Int, x: Float) {
-        checkActiveProgram(program)
-        glUniform1f( location, x)
-    }
-
-    override fun programUniform2f(program: Int, location: Int, x: Float, y: Float) {
-        checkActiveProgram(program)
-        glUniform2f( location, x, y)
-    }
-
-    override fun programUniform3f(program: Int, location: Int, x: Float, y: Float, z: Float) {
-        checkActiveProgram(program)
-        glUniform3f(location, x, y, z)
-    }
-
-    override fun programUniform4f(program: Int, location: Int, x: Float, y: Float, z: Float, w: Float) {
-        checkActiveProgram(program)
-        glUniform4f(location, x, y, z, w)
-    }
-
-    override fun programUniformMatrix4fv(program: Int, location: Int, transpose: Boolean, value: FloatArray) {
-        checkActiveProgram(program)
-        glUniformMatrix4fv(location, transpose, value)
-    }
+    override fun uniform1i(location: GLUniformLocation, x: Int) = glUniform1i(location.unwrap(), x)
+    override fun uniform1f(location: GLUniformLocation, x: Float) = glUniform1f(location.unwrap(), x)
+    override fun uniform2f(location: GLUniformLocation, x: Float, y: Float) = glUniform2f(location.unwrap(), x, y)
+    override fun uniform3f(location: GLUniformLocation, x: Float, y: Float, z: Float) = glUniform3f(location.unwrap(), x, y, z)
+    override fun uniform4f(location: GLUniformLocation, x: Float, y: Float, z: Float, w: Float) = glUniform4f(location.unwrap(), x, y, z, w)
+    override fun uniformMatrix4fv(location: GLUniformLocation, transpose: Boolean, value: FloatArray) = glUniformMatrix4fv(location.unwrap(), transpose, value)
 
     private fun stackAllocateIntsAndCall(values: List<Int>, block: (IntBuffer) -> (Unit)) {
         if (values.isNotEmpty()) {

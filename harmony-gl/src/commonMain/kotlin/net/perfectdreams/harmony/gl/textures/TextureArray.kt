@@ -2,11 +2,12 @@ package net.perfectdreams.harmony.gl.textures
 
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.GLTexture
 import net.perfectdreams.harmony.gl.TextureSource
 
 class TextureArray(
     val gl: GLContext,
-    val textureId: Int,
+    val textureId: GLTexture,
     val layerCount: Int,
     val layerWidth: Int,
     val layerHeight: Int

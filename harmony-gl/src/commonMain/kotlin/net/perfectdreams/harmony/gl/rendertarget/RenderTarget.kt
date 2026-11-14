@@ -14,7 +14,7 @@ fun RenderTarget.withRenderTarget(block: () -> Unit) {
     when (this) {
         is Framebuffer -> return this.withFramebuffer(block)
         is WindowRenderTarget -> {
-            gl.bindFramebuffer(GL_FRAMEBUFFER, 0)
+            gl.bindFramebuffer(GL_FRAMEBUFFER, null)
             gl.viewport(0, 0, this.width, this.height)
             block()
         }

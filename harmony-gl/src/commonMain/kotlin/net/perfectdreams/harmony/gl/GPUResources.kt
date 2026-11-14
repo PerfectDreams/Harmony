@@ -202,7 +202,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
             gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_DEPTH_ATTACHMENT, GLConstants.GL_TEXTURE_2D, depthTexture.textureId, 0)
         val status = gl.checkFramebufferStatus(GLConstants.GL_FRAMEBUFFER)
         check(status == GLConstants.GL_FRAMEBUFFER_COMPLETE) { "Framebuffer is incomplete! Status: 0x${status.toString(16)}" }
-        gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, 0)
+        gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, null)
 
         return Framebuffer(gl, framebufferId, colorTexture, depthTexture)
     }
@@ -210,7 +210,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     /**
      * Loads the vertex shader and fragment shader from the [vertexShaderCode] and [fragmentShaderCode]
      */
-    fun <T : ShaderProgram> createShader(vertexShaderCode: String, fragmentShaderCode: String, createGameShader: (GLContext, Int) -> (T)): T {
+    fun <T : ShaderProgram> createShader(vertexShaderCode: String, fragmentShaderCode: String, createGameShader: (GLContext, GLProgram) -> (T)): T {
         val programId = createShader(vertexShaderCode, fragmentShaderCode)
         return createGameShader.invoke(gl, programId)
     }
@@ -218,7 +218,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     /**
      * Loads the vertex shader and fragment shader
      */
-    fun createShader(vertexShaderCode: String, fragmentShaderCode: String): Int {
+    fun createShader(vertexShaderCode: String, fragmentShaderCode: String): GLProgram {
         val vertexShaderId = gl.createShader(GLConstants.GL_VERTEX_SHADER)
         val fragmentShaderId = gl.createShader(GLConstants.GL_FRAGMENT_SHADER)
 
@@ -255,7 +255,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         return programId
     }
 
-    private fun checkAndCompile(shaderId: Int, code: String) {
+    private fun checkAndCompile(shaderId: GLShader, code: String) {
         // Compile Shader
         gl.shaderSource(shaderId, code)
         gl.compileShader(shaderId)

@@ -2,9 +2,10 @@ package net.perfectdreams.harmony.gl.textures
 
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.GLTexture
 import net.perfectdreams.harmony.gl.TextureSource
 
-class Texture(val gl: GLContext, val textureId: Int, var width: Int, var height: Int) : AutoCloseable {
+class Texture(val gl: GLContext, val textureId: GLTexture, var width: Int, var height: Int) : AutoCloseable {
     /**
      * Write [textureSource] to this texture
      *

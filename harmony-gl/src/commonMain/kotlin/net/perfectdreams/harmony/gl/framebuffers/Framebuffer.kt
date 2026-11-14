@@ -2,12 +2,13 @@ package net.perfectdreams.harmony.gl.framebuffers
 
 import net.perfectdreams.harmony.gl.GLConstants.GL_FRAMEBUFFER
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.gl.GLFramebuffer
 import net.perfectdreams.harmony.gl.rendertarget.RenderTarget
 import net.perfectdreams.harmony.gl.textures.Texture
 
 class Framebuffer(
     gl: GLContext,
-    val framebufferId: Int,
+    val framebufferId: GLFramebuffer,
     val colorTexture: Texture?,
     val depthTexture: Texture?
 ) : AutoCloseable, RenderTarget(gl) {
@@ -34,7 +35,7 @@ inline fun <T> Framebuffer.withFramebuffer(block: () -> T): T {
     try {
         return block()
     } finally {
-        gl.bindFramebuffer(GL_FRAMEBUFFER, 0)
+        gl.bindFramebuffer(GL_FRAMEBUFFER, null)
         gl.viewport(0, 0, 1280, 720)
     }
 }
