@@ -82,6 +82,7 @@ import org.lwjgl.opengl.GL30.glGenRenderbuffers
 import org.lwjgl.opengl.GL30.glGenVertexArrays
 import org.lwjgl.opengl.GL30.glGenerateMipmap
 import org.lwjgl.opengl.GL30.glRenderbufferStorage
+import org.lwjgl.opengl.GL30.glRenderbufferStorageMultisample
 import org.lwjgl.opengl.GL30.glVertexAttribIPointer
 import org.lwjgl.opengl.GL31.glDrawArraysInstanced
 import org.lwjgl.opengl.GL31.glDrawElementsInstanced
@@ -261,6 +262,7 @@ class OpenGLContext : GLContext() {
     override fun genRenderbuffers() = OpenGLRenderbuffer(glGenRenderbuffers())
     override fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?) = glBindRenderbuffer(target, renderbuffer?.unwrap() ?: 0)
     override fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int) = glRenderbufferStorage(target, internalFormat, width, height)
+    override fun renderbufferStorageMultisample(target: Int, samples: Int, internalFormat: Int, width: Int, height: Int) = glRenderbufferStorageMultisample(target, samples, internalFormat, width, height)
     override fun deleteRenderbuffers(values: List<GLRenderbuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteRenderbuffers(it) }
     override fun drawBuffers(buffers: IntArray) = glDrawBuffers(buffers)
     override fun readBuffer(src: Int) = glReadBuffer(src)

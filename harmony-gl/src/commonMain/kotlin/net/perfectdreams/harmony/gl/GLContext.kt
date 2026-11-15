@@ -64,6 +64,7 @@ abstract class GLContext {
     abstract fun genRenderbuffers(): GLRenderbuffer
     abstract fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?)
     abstract fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int)
+    abstract fun renderbufferStorageMultisample(target: Int, samples: Int, internalFormat: Int, width: Int, height: Int)
     fun deleteRenderbuffer(renderbuffer: GLRenderbuffer) = deleteRenderbuffers(listOf(renderbuffer))
     abstract fun deleteRenderbuffers(values: List<GLRenderbuffer>)
     abstract fun drawBuffers(buffers: IntArray)

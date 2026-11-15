@@ -262,16 +262,23 @@ fun main() {
 
     val framebuffer = gpu.createFramebuffer(
         FramebufferAttachments(
-            mapOf(
-                0 to FramebufferAttachment.TextureAttachment(gpu.createTexture(1280, 720, TextureFormat.RGBA8, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST))
-            ),
-            depthStencilAttachment = FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(1280, 720, TextureFormat.DEPTH16))
+            mapOf(0 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4))),
+            depthStencilAttachment = FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.DEPTH24, 4))
         )
+    )
+    val targetFramebuffer = gpu.createFramebuffer(
+        160,
+        90,
+        null,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_NEAREST,
+        GLConstants.GL_NEAREST
     )
     val framebufferBlitTarget = gpu.createFramebuffer(
         FramebufferAttachments(
             mapOf(),
-            depthStencilAttachment = FramebufferAttachment.TextureAttachment(gpu.createTexture(1280, 720, TextureFormat.DEPTH16, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST))
+            depthStencilAttachment = FramebufferAttachment.TextureAttachment(gpu.createTexture(160, 90, TextureFormat.DEPTH24, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST))
         )
     )
     val texture = gpu.createTexture(
@@ -333,6 +340,14 @@ fun main() {
                 copyStencil = false
             )
 
+            framebuffer.blitTo(
+                targetFramebuffer,
+                GLConstants.GL_NEAREST,
+                copyColor = true,
+                copyDepth = false,
+                copyStencil = false
+            )
+
             gpu.onRenderTarget(gpu.windowRenderTarget) {
                 gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
 
@@ -349,7 +364,7 @@ fun main() {
                             1f,
                             1f,
                             0f,
-                            framebuffer.attachments.color0Texture
+                            targetFramebuffer.attachments.color0Texture
                         )
 
                         drawQuad(

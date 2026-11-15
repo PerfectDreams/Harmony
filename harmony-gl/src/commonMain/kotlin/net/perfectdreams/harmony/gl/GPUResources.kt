@@ -102,12 +102,18 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     fun createRenderbuffer(
         width: Int,
         height: Int,
-        format: TextureFormat
+        format: TextureFormat,
+        samples: Int
     ): Renderbuffer {
+        require(samples >= 1) { "Renderbuffer samples must be 1 or higher!" }
         val renderbufferId = gl.genRenderbuffers()
         gl.bindRenderbuffer(GL_RENDERBUFFER, renderbufferId)
-        gl.renderbufferStorage(GL_RENDERBUFFER, format.internalFormat, width, height)
-        return Renderbuffer(gl, renderbufferId, format, width, height)
+        if (samples == 1) {
+            gl.renderbufferStorage(GL_RENDERBUFFER, format.internalFormat, width, height)
+        } else {
+            gl.renderbufferStorageMultisample(GL_RENDERBUFFER, samples, format.internalFormat, width, height)
+        }
+        return Renderbuffer(gl, renderbufferId, format, width, height, samples)
     }
 
     fun createTextureArray(
@@ -161,7 +167,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
      */
     fun createDepthTexture(width: Int, height: Int, format: TextureFormat, compareFunc: CompareFunc?): Texture {
         require(format.hasDepth) { "Depth textures need a depth format, but $format was used!" }
-        
+
         val filter = if (compareFunc != null) {
             // With compare mode, LINEAR blends the result of 4 comparisons, so shadow edges are smooth
             GLConstants.GL_LINEAR
@@ -224,25 +230,24 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
 
         var targetWidth = -1
         var targetHeight = -1
+        var targetSamples = -1
 
-        fun updateTargetDimensions(width: Int, height: Int) {
+        fun updateTargetDimensions(width: Int, height: Int, samples: Int) {
             if (targetWidth == -1)
                 targetWidth = width
             if (targetHeight == -1)
                 targetHeight = height
+            if (targetSamples == -1)
+                targetSamples = samples
             require(targetWidth == width && targetHeight == height) { "Found a ${width}x${height} attachment on a ${targetWidth}x${targetHeight} framebuffer!" }
+            require(targetSamples == samples) { "Found a $samples samples attachment on a $targetSamples samples framebuffer!" }
         }
 
         for ((attachmentIndex, attachment) in attachments.colorAttachments) {
+            updateTargetDimensions(attachment.width, attachment.height, attachment.samples)
             when (attachment) {
-                is FramebufferAttachment.TextureAttachment -> {
-                    updateTargetDimensions(attachment.width, attachment.height)
-                    gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GLConstants.GL_TEXTURE_2D, attachment.texture.textureId, 0)
-                }
-                is FramebufferAttachment.RenderbufferAttachment -> {
-                    updateTargetDimensions(attachment.width, attachment.height)
-                    gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GL_RENDERBUFFER, attachment.renderbuffer.renderbufferId)
-                }
+                is FramebufferAttachment.TextureAttachment -> gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GLConstants.GL_TEXTURE_2D, attachment.texture.textureId, 0)
+                is FramebufferAttachment.RenderbufferAttachment -> gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GL_RENDERBUFFER, attachment.renderbuffer.renderbufferId)
             }
         }
 
@@ -270,15 +275,10 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         }
 
         if (attachments.depthStencilAttachment != null) {
+            updateTargetDimensions(attachments.depthStencilAttachment.width, attachments.depthStencilAttachment.height, attachments.depthStencilAttachment.samples)
             when (attachments.depthStencilAttachment) {
-                is FramebufferAttachment.TextureAttachment -> {
-                    updateTargetDimensions(attachments.depthStencilAttachment.width, attachments.depthStencilAttachment.height)
-                    gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, attachments.depthStencilAttachment.format.depthStencilAttachmentPoint, GLConstants.GL_TEXTURE_2D, attachments.depthStencilAttachment.texture.textureId, 0)
-                }
-                is FramebufferAttachment.RenderbufferAttachment -> {
-                    updateTargetDimensions(attachments.depthStencilAttachment.width, attachments.depthStencilAttachment.height)
-                    gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, attachments.depthStencilAttachment.format.depthStencilAttachmentPoint, GL_RENDERBUFFER, attachments.depthStencilAttachment.renderbuffer.renderbufferId)
-                }
+                is FramebufferAttachment.TextureAttachment -> gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, attachments.depthStencilAttachment.format.depthStencilAttachmentPoint, GLConstants.GL_TEXTURE_2D, attachments.depthStencilAttachment.texture.textureId, 0)
+                is FramebufferAttachment.RenderbufferAttachment -> gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, attachments.depthStencilAttachment.format.depthStencilAttachmentPoint, GL_RENDERBUFFER, attachments.depthStencilAttachment.renderbuffer.renderbufferId)
             }
         }
 
@@ -286,7 +286,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         check(status == GLConstants.GL_FRAMEBUFFER_COMPLETE) { "Framebuffer is incomplete! Status: 0x${status.toString(16)}" }
         gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, null)
 
-        return Framebuffer(gl, framebufferId, attachments, targetWidth, targetHeight)
+        return Framebuffer(gl, framebufferId, attachments, targetWidth, targetHeight, targetSamples != 1)
     }
 
     /**

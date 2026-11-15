@@ -9,7 +9,8 @@ class Renderbuffer(
     val renderbufferId: GLRenderbuffer,
     val format: TextureFormat,
     var width: Int,
-    var height: Int
+    var height: Int,
+    val samples: Int
 ) : AutoCloseable {
     override fun close() {
         gl.deleteRenderbuffer(this.renderbufferId)

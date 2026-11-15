@@ -4,7 +4,6 @@ import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_DEPTH_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_FRAMEBUFFER
-import net.perfectdreams.harmony.gl.GLConstants.GL_NEAREST
 import net.perfectdreams.harmony.gl.GLConstants.GL_STENCIL_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLFramebuffer
@@ -16,7 +15,8 @@ class Framebuffer(
     val framebufferId: GLFramebuffer,
     val attachments: FramebufferAttachments,
     override val width: Int,
-    override val height: Int
+    override val height: Int,
+    val isMultisampled: Boolean
 ) : AutoCloseable, RenderTarget(gl) {
     fun blitTo(
         target: RenderTarget,
@@ -58,6 +58,14 @@ class Framebuffer(
         copyStencil: Boolean,
     ) {
         require(copyColor || copyDepth || copyStencil) { "A blit needs to copy at least one of color, depth or stencil!" }
+        require(!isMultisampled || (sourceWidth == targetWidth && sourceHeight == targetHeight)) { "Cannot scale while copying from a multisampled framebuffer, the source region is ${sourceWidth}x${sourceHeight} but the target region is ${targetWidth}x${targetHeight}!" }
+        if (copyDepth || copyStencil) {
+            val sourceDepthStencilFormat = requireNotNull(this.attachments.depthStencilAttachment) { "Trying to copy depth and/or stencil, but the source framebuffer does not have a depth buffer!" }
+            if (target is Framebuffer) {
+                val targetDepthStencilAttachment = requireNotNull(target.attachments.depthStencilAttachment) { "Trying to copy depth and/or stencil, but the target framebuffer does not have a depth buffer!" }
+                require(sourceDepthStencilFormat.format == targetDepthStencilAttachment.format) { "Incompatible depth stencil formats! Source is ${sourceDepthStencilFormat.format} and the target is ${targetDepthStencilAttachment.format}, both must use the same format" }
+            }
+        }
 
         gl.bindFramebuffer(GLConstants.GL_READ_FRAMEBUFFER, framebufferId)
         val targetFB = when (target) {

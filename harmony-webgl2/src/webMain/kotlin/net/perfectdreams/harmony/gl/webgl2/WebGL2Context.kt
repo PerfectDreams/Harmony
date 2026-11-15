@@ -225,6 +225,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun genRenderbuffers() = WebGLRenderbuffer(context.createRenderbuffer())
     override fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?) = context.bindRenderbuffer(target.asGLenum(), renderbuffer?.unwrap())
     override fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int) = context.renderbufferStorage(target.asGLenum(), internalFormat.asGLenum(), width, height)
+    override fun renderbufferStorageMultisample(target: Int, samples: Int, internalFormat: Int, width: Int, height: Int) = context.renderbufferStorageMultisample(target.asGLenum(), samples, internalFormat.asGLenum(), width, height)
     override fun deleteRenderbuffers(values: List<GLRenderbuffer>) {
         for (renderbuffer in values) {
             context.deleteRenderbuffer(renderbuffer.unwrap())
