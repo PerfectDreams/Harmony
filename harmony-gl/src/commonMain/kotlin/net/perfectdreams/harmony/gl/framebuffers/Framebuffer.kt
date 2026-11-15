@@ -11,13 +11,13 @@ import net.perfectdreams.harmony.gl.rendertarget.RenderTarget
 import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
 
 class Framebuffer(
-    gl: GLContext,
+    val gl: GLContext,
     val framebufferId: GLFramebuffer,
     val attachments: FramebufferAttachments,
     override val width: Int,
     override val height: Int,
     val isMultisampled: Boolean
-) : AutoCloseable, RenderTarget(gl) {
+) : AutoCloseable, RenderTarget() {
     fun blitTo(
         target: RenderTarget,
         filter: Int,
@@ -122,6 +122,5 @@ inline fun <T> Framebuffer.withFramebuffer(block: () -> T): T {
         return block()
     } finally {
         gl.bindFramebuffer(GL_FRAMEBUFFER, null)
-        gl.viewport(0, 0, 1280, 720)
     }
 }

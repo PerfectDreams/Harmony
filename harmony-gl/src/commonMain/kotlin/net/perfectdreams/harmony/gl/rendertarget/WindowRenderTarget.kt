@@ -1,8 +1,14 @@
 package net.perfectdreams.harmony.gl.rendertarget
 
-import net.perfectdreams.harmony.gl.GLContext
+class WindowRenderTarget(initialWidth: Int, initialHeight: Int) : RenderTarget() {
+    override var width = initialWidth
+        private set
+    override var height = initialHeight
+        private set
 
-class WindowRenderTarget(gl: GLContext, initialWidth: Int, initialHeight: Int) : RenderTarget(gl) {
-    override val width = initialWidth
-    override val height = initialHeight
+    fun resize(width: Int, height: Int) {
+        require(width >= 0 && height >= 0) { "Window size can't be negative! ${width}x${height}" }
+        this.width = width
+        this.height = height
+    }
 }

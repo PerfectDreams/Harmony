@@ -1,15 +1,16 @@
 package net.perfectdreams.harmony.gl
 
+import net.perfectdreams.harmony.gl.GLConstants.GL_FRAMEBUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_RENDERBUFFER
 import net.perfectdreams.harmony.gl.framebuffers.Framebuffer
 import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachment
 import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachments
+import net.perfectdreams.harmony.gl.framebuffers.withFramebuffer
 import net.perfectdreams.harmony.gl.pipelines.CompareFunc
 import net.perfectdreams.harmony.gl.renderbuffers.Renderbuffer
 import net.perfectdreams.harmony.gl.rendertarget.RenderTarget
 import net.perfectdreams.harmony.gl.rendertarget.RenderTargetScope
 import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
-import net.perfectdreams.harmony.gl.rendertarget.withRenderTarget
 import net.perfectdreams.harmony.gl.shaders.ShaderProgram
 import net.perfectdreams.harmony.gl.textures.Texture
 import net.perfectdreams.harmony.gl.textures.TextureArray
@@ -17,9 +18,8 @@ import net.perfectdreams.harmony.gl.textures.TextureFormat
 import net.perfectdreams.harmony.gl.textures.TextureGrid
 import net.perfectdreams.harmony.gl.textures.withTexture
 
-class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: Int) {
+class GPUResources(val gl: GLContext) {
     val white1x1Texture = create1x1Texture(0xFF, 0xFF, 0xFF, 0xFF)
-    val windowRenderTarget = WindowRenderTarget(gl, initialWidth, initialHeight)
 
     fun create1x1Texture(red: Int, green: Int, blue: Int, alpha: Int) = createTexture(
         ByteArrayTextureSource(1, 1, byteArrayOf(red.toByte(), green.toByte(), blue.toByte(), alpha.toByte())),
@@ -357,8 +357,15 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     // RenderTarget related things are things that affect the ENTIRE RenderTarget (like clear)
     fun onRenderTarget(target: RenderTarget, block: RenderTargetScope.() -> (Unit)) {
         val scope = RenderTargetScope(this, target)
-        target.withRenderTarget {
-            block(scope)
+
+        when (target) {
+            is Framebuffer -> return target.withFramebuffer { block(scope) }
+            is WindowRenderTarget -> {
+                gl.bindFramebuffer(GL_FRAMEBUFFER, null)
+                gl.viewport(0, 0, target.width, target.height)
+                block(scope)
+            }
+            else -> error("I don't know how to render to $target!")
         }
     }
 }

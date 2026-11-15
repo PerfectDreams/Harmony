@@ -18,6 +18,7 @@ import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachments
 import net.perfectdreams.harmony.gl.pipelines.CompareFunc
 import net.perfectdreams.harmony.gl.pipelines.DepthState
 import net.perfectdreams.harmony.gl.pipelines.Pipeline
+import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.gl.textures.TextureFormat
 import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
 import org.joml.Matrix4f
@@ -74,7 +75,8 @@ fun main() {
     SDL_GL_SetSwapInterval(1) // vsync
 
     val gl = OpenGLContext()
-    val gpu = GPUResources(gl, 1280, 720)
+    val gpu = GPUResources(gl)
+    val windowRenderTarget = WindowRenderTarget(1280, 720)
 
     val vao = gl.genVertexArrays()
     val vbo = gl.genBuffers()
@@ -356,7 +358,7 @@ fun main() {
                 copyStencil = false
             )
 
-            gpu.onRenderTarget(gpu.windowRenderTarget) {
+            gpu.onRenderTarget(windowRenderTarget) {
                 gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
 
                 withSpritePipeline(batcher, uiShader) {

@@ -15,6 +15,7 @@ import net.perfectdreams.harmony.gl.GPUResources
 import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
 import net.perfectdreams.harmony.gl.pipelines.Pipeline
+import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
 import org.joml.Matrix4f
 import org.lwjgl.opengl.GL
@@ -54,7 +55,8 @@ fun main() {
     SDL_GL_SetSwapInterval(1) // vsync
 
     val gl = OpenGLContext()
-    val gpu = GPUResources(gl, 1280, 720)
+    val gpu = GPUResources(gl)
+    val windowRenderTarget = WindowRenderTarget(1280, 720)
 
     val vao = gl.genVertexArrays()
     val vbo = gl.genBuffers()
@@ -180,7 +182,7 @@ fun main() {
                     running = false
             }
 
-            gpu.onRenderTarget(gpu.windowRenderTarget) {
+            gpu.onRenderTarget(windowRenderTarget) {
                 gl.clearColor(0.0f, 0.0f, 1.0f, 1.0f)
                 gl.clear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 

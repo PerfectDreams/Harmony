@@ -14,6 +14,7 @@ import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
 import net.perfectdreams.harmony.gl.GPUResources
 import net.perfectdreams.harmony.gl.pipelines.DepthState
 import net.perfectdreams.harmony.gl.pipelines.Pipeline
+import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.gl.textures.TextureFormat
 import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
 import org.joml.Matrix4f
@@ -23,6 +24,7 @@ import org.lwjgl.sdl.SDLEvents.SDL_EVENT_KEY_DOWN
 import org.lwjgl.sdl.SDLEvents.SDL_EVENT_KEY_UP
 import org.lwjgl.sdl.SDLEvents.SDL_EVENT_MOUSE_MOTION
 import org.lwjgl.sdl.SDLEvents.SDL_EVENT_QUIT
+import org.lwjgl.sdl.SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
 import org.lwjgl.sdl.SDLEvents.SDL_PollEvent
 import org.lwjgl.sdl.SDLInit.SDL_INIT_AUDIO
 import org.lwjgl.sdl.SDLInit.SDL_INIT_VIDEO
@@ -45,9 +47,11 @@ import org.lwjgl.sdl.SDLVideo.SDL_GL_SetAttribute
 import org.lwjgl.sdl.SDLVideo.SDL_GL_SetSwapInterval
 import org.lwjgl.sdl.SDLVideo.SDL_GL_SwapWindow
 import org.lwjgl.sdl.SDLVideo.SDL_GetWindowDisplayScale
+import org.lwjgl.sdl.SDLVideo.SDL_GetWindowSizeInPixels
 import org.lwjgl.sdl.SDLVideo.SDL_SetWindowSize
 import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_HIGH_PIXEL_DENSITY
 import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_OPENGL
+import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_RESIZABLE
 import org.lwjgl.sdl.SDL_Event
 import org.lwjgl.stb.STBImage
 import org.lwjgl.stb.STBImage.stbi_set_flip_vertically_on_load
@@ -65,7 +69,7 @@ fun main() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE)
 
-    val windowFlags = SDL_WINDOW_OPENGL or SDL_WINDOW_HIGH_PIXEL_DENSITY
+    val windowFlags = SDL_WINDOW_OPENGL or SDL_WINDOW_HIGH_PIXEL_DENSITY or SDL_WINDOW_RESIZABLE
     val window = SDL_CreateWindow("Cube", 1280, 720, windowFlags)
     val scale = SDL_GetWindowDisplayScale(window)
     // Thanks Wayland!
@@ -80,7 +84,16 @@ fun main() {
     SDL_GL_SetSwapInterval(1) // vsync
 
     val gl = OpenGLContext()
-    val gpu = GPUResources(gl, 1280, 720)
+
+    val (initialPixelWidth, initialPixelHeight) = MemoryStack.stackPush().use { stack ->
+        val pixelWidth = stack.mallocInt(1)
+        val pixelHeight = stack.mallocInt(1)
+        SDL_GetWindowSizeInPixels(window, pixelWidth, pixelHeight)
+        pixelWidth.get(0) to pixelHeight.get(0)
+    }
+
+    val gpu = GPUResources(gl)
+    val windowRenderTarget = WindowRenderTarget(initialPixelWidth, initialPixelHeight)
 
     val vao = gl.genVertexArrays()
     val vbo = gl.genBuffers()
@@ -314,7 +327,6 @@ fun main() {
     gl.enable(GLConstants.GL_DEPTH_TEST)
 
     val batcher = SpriteBatcher(gl)
-    val uiProjection = Matrix4f().ortho(0f, 1280f, 720f, 0f, -1f, 1f)
 
     var cameraX = 0f
     var cameraY = 0f
@@ -336,6 +348,8 @@ fun main() {
         var running = true
 
         while (running) {
+            val uiProjection = Matrix4f().ortho(0f, windowRenderTarget.width.toFloat(), windowRenderTarget.height.toFloat(), 0f, -1f, 1f)
+
             gl.clearColor(0.0f, 0.0f, 1.0f, 1.0f)
 
             val view = Matrix4f()
@@ -345,6 +359,9 @@ fun main() {
             while (SDL_PollEvent(event)) {
                 if (event.type() == SDL_EVENT_QUIT)
                     running = false
+
+                if (event.type() == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
+                    windowRenderTarget.resize(event.window().data1(), event.window().data2())
 
                 if (event.type() == SDL_EVENT_MOUSE_MOTION) {
                     mouseX = event.motion().x()
@@ -419,7 +436,7 @@ fun main() {
                 }
             }
 
-            gpu.onRenderTarget(gpu.windowRenderTarget) {
+            gpu.onRenderTarget(windowRenderTarget) {
                 gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
 
                 withPipeline(Pipeline(shader, depth = DepthState(write = true))) {
