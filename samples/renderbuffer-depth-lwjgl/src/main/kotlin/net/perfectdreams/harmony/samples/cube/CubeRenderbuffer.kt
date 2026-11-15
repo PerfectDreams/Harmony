@@ -340,9 +340,17 @@ fun main() {
                 copyStencil = false
             )
 
-            framebuffer.blitTo(
+            framebuffer.blitRegionTo(
                 targetFramebuffer,
                 GLConstants.GL_NEAREST,
+                0,
+                0,
+                160,
+                90,
+                0,
+                0,
+                160,
+                90,
                 copyColor = true,
                 copyDepth = false,
                 copyStencil = false

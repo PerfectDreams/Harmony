@@ -18,18 +18,16 @@ import net.perfectdreams.harmony.gl.textures.TextureGrid
 import net.perfectdreams.harmony.gl.textures.withTexture
 
 class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: Int) {
-    val white1x1Texture = create1x1WhiteTexture()
+    val white1x1Texture = create1x1Texture(0xFF, 0xFF, 0xFF, 0xFF)
     val windowRenderTarget = WindowRenderTarget(gl, initialWidth, initialHeight)
 
-    private fun create1x1WhiteTexture(): Texture {
-        return createTexture(
-            ByteArrayTextureSource(1, 1, byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte())),
-            GLConstants.GL_REPEAT,
-            GLConstants.GL_REPEAT,
-            GLConstants.GL_NEAREST,
-            GLConstants.GL_NEAREST
-        )
-    }
+    fun create1x1Texture(red: Int, green: Int, blue: Int, alpha: Int) = createTexture(
+        ByteArrayTextureSource(1, 1, byteArrayOf(red.toByte(), green.toByte(), blue.toByte(), alpha.toByte())),
+        GLConstants.GL_REPEAT,
+        GLConstants.GL_REPEAT,
+        GLConstants.GL_NEAREST,
+        GLConstants.GL_NEAREST
+    )
 
     /**
      * Creates a texture from the [source]

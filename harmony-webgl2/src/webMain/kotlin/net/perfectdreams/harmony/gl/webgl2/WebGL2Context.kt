@@ -2,6 +2,7 @@ package net.perfectdreams.harmony.gl.webgl2
 
 import js.array.toJsArray
 import js.buffer.ArrayBufferLike
+import js.numbers.JsNumbers.toJsInt
 import js.reflect.unsafeCast
 import js.typedarrays.Uint8Array
 import net.perfectdreams.harmony.gl.ByteArrayTextureSource
@@ -88,9 +89,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
 
     override fun enableVertexAttribArray(index: Int) = context.enableVertexAttribArray(index.asGLuint())
     override fun disableVertexAttribArray(index: Int) = context.disableVertexAttribArray(index.asGLuint())
-    override fun vertexAttribDivisor(index: Int, divisor: Int) {
-        TODO("Not yet implemented")
-    }
+    override fun vertexAttribDivisor(index: Int, divisor: Int) = context.vertexAttribDivisor(index.asGLuint(), divisor.asGLuint())
 
     override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray {
         val dst = Uint8Array<ArrayBufferLike>(width * height * 4)
@@ -114,10 +113,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
                 val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
                 context.texImage2D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, textureSource.height, border, format.asGLenum(), type.asGLenum(), pixels)
             }
-            is BrowserImageTextureSource -> {
-                context.texImage2D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, textureSource.height, border, format.asGLenum(), type.asGLenum(), textureSource.image)
-            }
-            is BrowserImageBitmapTextureSource -> {
+            is BrowserImageTexImageSource -> {
                 context.texImage2D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, textureSource.height, border, format.asGLenum(), type.asGLenum(), textureSource.image)
             }
             else -> error("Unsupported image type!")
@@ -144,10 +140,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
                 val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
                 context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, layerHeight, depth, border, format.asGLenum(), type.asGLenum(), pixels)
             }
-            is BrowserImageTextureSource -> {
-                context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, layerHeight, depth, border, format.asGLenum(), type.asGLenum(), textureSource.image)
-            }
-            is BrowserImageBitmapTextureSource -> {
+            is BrowserImageTexImageSource -> {
                 context.texImage3D(target.asGLenum(), level, internalFormat.asGLenum(), textureSource.width, layerHeight, depth, border, format.asGLenum(), type.asGLenum(), textureSource.image)
             }
             else -> error("Unsupported image type!")
@@ -170,10 +163,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
                 val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
                 context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, width, height, format.asGLenum(), type.asGLenum(), pixels)
             }
-            is BrowserImageTextureSource -> {
-                context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, width, height, format.asGLenum(), type.asGLenum(), textureSource.image)
-            }
-            is BrowserImageBitmapTextureSource -> {
+            is BrowserImageTexImageSource -> {
                 context.texSubImage2D(target.asGLenum(), level, xoffset, yoffset, width, height, format.asGLenum(), type.asGLenum(), textureSource.image)
             }
             else -> error("Unsupported image type!")
@@ -198,10 +188,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
                 val pixels = Uint8Array<ArrayBufferLike>(textureSource.pixels.toArrayBufferFast())
                 context.texSubImage3D(target.asGLenum(), level, xoffset, yoffset, zoffset, width, height, depth, format.asGLenum(), type.asGLenum(), pixels)
             }
-            is BrowserImageTextureSource -> {
-                context.texSubImage3D(target.asGLenum(), level, xoffset, yoffset, zoffset, width, height, depth, format.asGLenum(), type.asGLenum(), textureSource.image)
-            }
-            is BrowserImageBitmapTextureSource -> {
+            is BrowserImageTexImageSource -> {
                 context.texSubImage3D(target.asGLenum(), level, xoffset, yoffset, zoffset, width, height, depth, format.asGLenum(), type.asGLenum(), textureSource.image)
             }
             else -> error("Unsupported image type!")
