@@ -69,6 +69,7 @@ import org.lwjgl.opengl.GL20.glUseProgram
 import org.lwjgl.opengl.GL20.glVertexAttribPointer
 import org.lwjgl.opengl.GL30.glBindFramebuffer
 import org.lwjgl.opengl.GL30.glBindRenderbuffer
+import org.lwjgl.opengl.GL30.glBlitFramebuffer
 import org.lwjgl.opengl.GL30.glBindVertexArray
 import org.lwjgl.opengl.GL30.glCheckFramebufferStatus
 import org.lwjgl.opengl.GL30.glDeleteFramebuffers
@@ -256,6 +257,7 @@ class OpenGLContext : GLContext() {
     override fun framebufferRenderbuffer(target: Int, attachment: Int, renderbuffertarget: Int, renderbuffer: GLRenderbuffer?) = glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer?.unwrap() ?: 0)
     override fun checkFramebufferStatus(target: Int) = glCheckFramebufferStatus(target)
     override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = glBindFramebuffer(target, framebuffer?.unwrap() ?: 0)
+    override fun blitFramebuffer(srcX0: Int, srcY0: Int, srcX1: Int, srcY1: Int, dstX0: Int, dstY0: Int, dstX1: Int, dstY1: Int, mask: Int, filter: Int) = glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter)
     override fun genRenderbuffers() = OpenGLRenderbuffer(glGenRenderbuffers())
     override fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?) = glBindRenderbuffer(target, renderbuffer?.unwrap() ?: 0)
     override fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int) = glRenderbufferStorage(target, internalFormat, width, height)

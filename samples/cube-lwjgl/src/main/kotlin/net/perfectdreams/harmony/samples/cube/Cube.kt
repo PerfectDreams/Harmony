@@ -14,6 +14,7 @@ import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
 import net.perfectdreams.harmony.gl.GPUResources
 import net.perfectdreams.harmony.gl.pipelines.DepthState
 import net.perfectdreams.harmony.gl.pipelines.Pipeline
+import net.perfectdreams.harmony.gl.textures.TextureFormat
 import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
 import org.joml.Matrix4f
 import org.lwjgl.opengl.GL
@@ -298,7 +299,7 @@ fun main() {
     }
 
     val framebuffer = gpu.createFramebuffer(
-        gpu.createTexture(64, 64, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST),
+        gpu.createTexture(64, 64, TextureFormat.RGBA8, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST),
         null
     )
     val texture = gpu.createTexture(

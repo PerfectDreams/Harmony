@@ -60,6 +60,7 @@ abstract class GLContext {
     abstract fun framebufferRenderbuffer(target: Int, attachment: Int, renderbuffertarget: Int, renderbuffer: GLRenderbuffer?)
     abstract fun checkFramebufferStatus(target: Int): Int
     abstract fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?)
+    abstract fun blitFramebuffer(srcX0: Int, srcY0: Int, srcX1: Int, srcY1: Int, dstX0: Int, dstY0: Int, dstX1: Int, dstY1: Int, mask: Int, filter: Int)
     abstract fun genRenderbuffers(): GLRenderbuffer
     abstract fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?)
     abstract fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int)

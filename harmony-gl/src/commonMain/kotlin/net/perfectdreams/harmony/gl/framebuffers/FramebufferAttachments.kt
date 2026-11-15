@@ -5,7 +5,7 @@ class FramebufferAttachments(
     val depthStencilAttachment: FramebufferAttachment?
 ) {
     init {
-        require(colorAttachments.keys.any { it >= 0 }) { "You can't have negative color attachment indices!" }
+        require(colorAttachments.isEmpty() || colorAttachments.keys.any { it >= 0 }) { "You can't have negative color attachment indices!" }
     }
 
     val color0 get() = colorAttachments[0]

@@ -221,6 +221,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun framebufferRenderbuffer(target: Int, attachment: Int, renderbuffertarget: Int, renderbuffer: GLRenderbuffer?) = context.framebufferRenderbuffer(target.asGLenum(), attachment.asGLenum(), renderbuffertarget.asGLenum(), renderbuffer?.unwrap())
     override fun checkFramebufferStatus(target: Int) = unsafeCast<JsNumber>(context.checkFramebufferStatus(target.asGLenum())).toInt()
     override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = context.bindFramebuffer(target.asGLenum(), framebuffer?.unwrap())
+    override fun blitFramebuffer(srcX0: Int, srcY0: Int, srcX1: Int, srcY1: Int, dstX0: Int, dstY0: Int, dstX1: Int, dstY1: Int, mask: Int, filter: Int) = context.blitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask.asGLbitfield(), filter.asGLenum())
     override fun genRenderbuffers() = WebGLRenderbuffer(context.createRenderbuffer())
     override fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?) = context.bindRenderbuffer(target.asGLenum(), renderbuffer?.unwrap())
     override fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int) = context.renderbufferStorage(target.asGLenum(), internalFormat.asGLenum(), width, height)

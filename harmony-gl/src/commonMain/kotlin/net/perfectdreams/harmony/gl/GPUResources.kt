@@ -15,6 +15,7 @@ import net.perfectdreams.harmony.gl.textures.Texture
 import net.perfectdreams.harmony.gl.textures.TextureArray
 import net.perfectdreams.harmony.gl.textures.TextureFormat
 import net.perfectdreams.harmony.gl.textures.TextureGrid
+import net.perfectdreams.harmony.gl.textures.withTexture
 
 class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: Int) {
     val white1x1Texture = create1x1WhiteTexture()
@@ -31,7 +32,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     }
 
     /**
-     * Creates a texture but does not upload any data to it
+     * Creates a texture from the [source]
      */
     fun createTexture(
         source: TextureSource,
@@ -44,7 +45,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         // magnify
         magFilter: Int
     ): Texture {
-        val texture = createTexture(source.width, source.height, wrapS, wrapT, minFilter, magFilter)
+        val texture = createTexture(source.width, source.height, TextureFormat.RGBA8, wrapS, wrapT, minFilter, magFilter)
         texture.write(source)
         return texture
     }
@@ -55,6 +56,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     fun createTexture(
         width: Int,
         height: Int,
+        format: TextureFormat,
         // horizontal
         wrapS: Int,
         // vertical
@@ -83,7 +85,6 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         // When shrinking the image, pixelate
         gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MAG_FILTER, magFilter)
 
-        val format = TextureFormat.RGBA8
         gl.texImage2D(
             GLConstants.GL_TEXTURE_2D,
             0,
@@ -158,36 +159,42 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
      *
      * Without a [compareFunc] the texture returns the raw depth when sampled with a `sampler2D`
      */
-    fun createDepthTexture(width: Int, height: Int, compareFunc: CompareFunc?): Texture {
-        val textureId = gl.genTextures()
-        gl.bindTexture(GLConstants.GL_TEXTURE_2D, textureId)
-
-        // Depth outside of the texture is meaningless, so it's clamped instead of repeated
-        gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_WRAP_S, GLConstants.GL_CLAMP_TO_EDGE)
-        gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_WRAP_T, GLConstants.GL_CLAMP_TO_EDGE)
-
-        if (compareFunc != null) {
-            gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_COMPARE_MODE, GLConstants.GL_COMPARE_REF_TO_TEXTURE)
-            gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_COMPARE_FUNC, compareFunc.glValue)
+    fun createDepthTexture(width: Int, height: Int, format: TextureFormat, compareFunc: CompareFunc?): Texture {
+        require(format.hasDepth) { "Depth textures need a depth format, but $format was used!" }
+        
+        val filter = if (compareFunc != null) {
             // With compare mode, LINEAR blends the result of 4 comparisons, so shadow edges are smooth
-            gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MIN_FILTER, GLConstants.GL_LINEAR)
-            gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MAG_FILTER, GLConstants.GL_LINEAR)
+            GLConstants.GL_LINEAR
         } else {
             // WebGL2 can't linearly filter depth textures without compare mode
-            gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MIN_FILTER, GLConstants.GL_NEAREST)
-            gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MAG_FILTER, GLConstants.GL_NEAREST)
+            GLConstants.GL_NEAREST
         }
 
-        val format = TextureFormat.DEPTH24
-        gl.texImage2D(GLConstants.GL_TEXTURE_2D, 0, format.internalFormat, width, height, 0, format.format, format.type)
+        val texture = createTexture(
+            width,
+            height,
+            format,
+            // Depth outside of the texture is meaningless, so it's clamped instead of repeated
+            GLConstants.GL_CLAMP_TO_EDGE,
+            GLConstants.GL_CLAMP_TO_EDGE,
+            filter,
+            filter
+        )
 
-        return Texture(gl, textureId, format, width, height)
+        if (compareFunc != null) {
+            texture.withTexture {
+                gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_COMPARE_MODE, GLConstants.GL_COMPARE_REF_TO_TEXTURE)
+                gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_COMPARE_FUNC, compareFunc.glValue)
+            }
+        }
+
+        return texture
     }
 
     fun createFramebuffer(
         width: Int,
         height: Int,
-        hasDepthTexture: Boolean,
+        depthTextureFormat: TextureFormat?,
         // horizontal
         wrapS: Int,
         // vertical
@@ -197,8 +204,8 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         // magnify
         magFilter: Int
     ): Framebuffer {
-        val texture = createTexture(width, height, wrapS, wrapT, minFilter, magFilter)
-        val depthTexture = if (hasDepthTexture) createDepthTexture(width, height, compareFunc = null) else null
+        val texture = createTexture(width, height, TextureFormat.RGBA8, wrapS, wrapT, minFilter, magFilter)
+        val depthTexture = if (depthTextureFormat != null) createDepthTexture(width, height, depthTextureFormat, compareFunc = null) else null
         return createFramebuffer(texture, depthTexture)
     }
 

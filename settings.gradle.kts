@@ -11,3 +11,4 @@ include(":harmony-webgl2")
 // ===[ SAMPLES ]===
 include(":samples:cube-lwjgl")
 include(":samples:instanced-2d-draw-lwjgl")
+include(":samples:renderbuffer-depth-lwjgl")
