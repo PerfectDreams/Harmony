@@ -105,7 +105,7 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         format: TextureFormat,
         samples: Int
     ): Renderbuffer {
-        require(samples >= 1) { "Renderbuffer samples must be 1 or higher!" }
+        require(samples >= 1) { "Renderbuffer samples must be 1 or higher, but it was $samples!" }
         val renderbufferId = gl.genRenderbuffers()
         gl.bindRenderbuffer(GL_RENDERBUFFER, renderbufferId)
         if (samples == 1) {
