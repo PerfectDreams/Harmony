@@ -22,7 +22,9 @@ abstract class GLContext {
     fun deleteVertexArray(array: GLVertexArrayObject) = deleteVertexArrays(listOf(array))
     abstract fun deleteVertexArrays(values: List<GLVertexArrayObject>)
     abstract fun drawArrays(mode: Int, first: Int, count: Int)
+    abstract fun drawArraysInstanced(mode: Int, first: Int, count: Int, primcount: Int)
     abstract fun drawElements(mode: Int, count: Int, type: Int, offset: Long)
+    abstract fun drawElementsInstanced(mode: Int, count: Int, type: Int, indices: Long, primcount: Int)
     abstract fun genTextures(): GLTexture
     abstract fun bindTexture(target: Int, texture: GLTexture?)
     abstract fun activeTexture(texture: Int)
@@ -37,6 +39,7 @@ abstract class GLContext {
     abstract fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int)
     abstract fun enableVertexAttribArray(index: Int)
     abstract fun disableVertexAttribArray(index: Int)
+    abstract fun vertexAttribDivisor(index: Int, divisor: Int)
     abstract fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray
     abstract fun pixelStorei(pname: Int, param: Int)
     abstract fun texImage2D(target: Int, level: Int, internalFormat: Int, width: Int, height: Int, border: Int, format: Int, type: Int)

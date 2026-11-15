@@ -60,7 +60,10 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         }
     }
     override fun drawArrays(mode: Int, first: Int, count: Int) = context.drawArrays(mode.asGLenum(), first, count)
+    override fun drawArraysInstanced(mode: Int, first: Int, count: Int, primcount: Int) = context.drawArraysInstanced(mode.asGLenum(), first, count, primcount)
     override fun drawElements(mode: Int, count: Int, type: Int, offset: Long) = context.drawElements(mode.asGLenum(), count, type.asGLenum(), offset.toInt())
+    override fun drawElementsInstanced(mode: Int, count: Int, type: Int, indices: Long, primcount: Int) = context.drawElementsInstanced(mode.asGLenum(), count, type.asGLenum(), indices.toInt(), primcount.toInt())
+
     override fun genTextures() = WebGLTexture(context.createTexture())
     override fun bindTexture(target: Int, texture: GLTexture?) = context.bindTexture(target.asGLenum(), texture?.unwrap())
     override fun activeTexture(texture: Int) = context.activeTexture(texture.asGLenum())
@@ -81,6 +84,10 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
 
     override fun enableVertexAttribArray(index: Int) = context.enableVertexAttribArray(index.asGLuint())
     override fun disableVertexAttribArray(index: Int) = context.disableVertexAttribArray(index.asGLuint())
+    override fun vertexAttribDivisor(index: Int, divisor: Int) {
+        TODO("Not yet implemented")
+    }
+
     override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray {
         val dst = Uint8Array<ArrayBufferLike>(width * height * 4)
         context.readPixels(x, y, width, height, format.asGLenum(), type.asGLenum(), dst)

@@ -19,13 +19,13 @@ fun buildVertexAttributes(block: VertexAttributesBuilder.() -> (Unit)): VertexAt
     for (attribute in builder.attributes) {
         val typeSize = getTypeSize(attribute.type)
         require(builder.currentStride % typeSize == 0) { "Attribute ${attribute.index} is misaligned to the stride! The stride is ${builder.currentStride}, but type ${attribute.type} must be aligned to $typeSize bytes" }
-        attributes.add(VertexAttributes.Attribute(attribute.index, attribute.size, attribute.type, attribute.normalized, attribute.offset))
+        attributes.add(VertexAttributes.Attribute(attribute.index, attribute.size, attribute.type, attribute.normalized, attribute.offset, attribute.divisor))
     }
 
     return VertexAttributes(
         builder.currentStride,
         builder.attributes.map {
-            VertexAttributes.Attribute(it.index, it.size, it.type, it.normalized, it.offset)
+            VertexAttributes.Attribute(it.index, it.size, it.type, it.normalized, it.offset, it.divisor)
         }
     )
 }
@@ -48,26 +48,27 @@ class VertexAttributesBuilder {
         val size: Int,
         val type: Int,
         val normalized: Boolean,
-        val offset: Int
+        val offset: Int,
+        val divisor: Int
     )
 
     var currentOffset = 0
     var currentStride = 0
     val attributes = mutableListOf<Attribute>()
 
-    fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean) {
+    fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, divisor: Int = 0) {
         require(attributes.none { it.index == index }) { "Attribute with index $index already exists!" }
-        this.attributes.add(Attribute(index, size, type, normalized, this.currentOffset))
+        this.attributes.add(Attribute(index, size, type, normalized, this.currentOffset, divisor))
         val typeSize = getTypeSize(type)
         require(currentOffset % typeSize == 0) { "Attribute $index is misaligned! It starts at offset ${currentOffset}, but type $type must be aligned to $typeSize bytes" }
         reserve(size * typeSize)
     }
 
-    fun vec2(index: Int) = vertexAttribPointer(index, 2, GL_FLOAT, false)
-    fun vec3(index: Int) = vertexAttribPointer(index, 3, GL_FLOAT, false)
-    fun vec4(index: Int) = vertexAttribPointer(index, 4, GL_FLOAT, false)
+    fun vec2(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 2, GL_FLOAT, false, divisor)
+    fun vec3(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 3, GL_FLOAT, false, divisor)
+    fun vec4(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 4, GL_FLOAT, false, divisor)
 
-    fun int(index: Int) = vertexAttribPointer(index, 1, GL_INT, false)
+    fun int(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 1, GL_INT, false, divisor)
 
     fun reserve(size: Int) {
         this.currentStride += size
@@ -88,6 +89,7 @@ class VertexAttributes(
         val type: Int,
         val normalized: Boolean,
         val offset: Int,
+        val divisor: Int
     )
 
     /**
@@ -109,6 +111,7 @@ class VertexAttributes(
             }
 
             gl.enableVertexAttribArray(attribute.index)
+            gl.vertexAttribDivisor(attribute.index, attribute.divisor)
         }
     }
 }

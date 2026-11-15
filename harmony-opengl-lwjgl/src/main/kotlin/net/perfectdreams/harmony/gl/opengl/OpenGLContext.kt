@@ -76,6 +76,9 @@ import org.lwjgl.opengl.GL30.glGenFramebuffers
 import org.lwjgl.opengl.GL30.glGenVertexArrays
 import org.lwjgl.opengl.GL30.glGenerateMipmap
 import org.lwjgl.opengl.GL30.glVertexAttribIPointer
+import org.lwjgl.opengl.GL31.glDrawArraysInstanced
+import org.lwjgl.opengl.GL31.glDrawElementsInstanced
+import org.lwjgl.opengl.GL33.glVertexAttribDivisor
 import org.lwjgl.system.MemoryStack
 import java.nio.ByteBuffer
 import java.nio.IntBuffer
@@ -111,7 +114,10 @@ class OpenGLContext : GLContext() {
     override fun bindVertexArray(array: GLVertexArrayObject?) = glBindVertexArray(array?.unwrap() ?: 0)
     override fun deleteVertexArrays(values: List<GLVertexArrayObject>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteVertexArrays(it) }
     override fun drawArrays(mode: Int, first: Int, count: Int) = glDrawArrays(mode, first, count)
+    override fun drawArraysInstanced(mode: Int, first: Int, count: Int, primcount: Int) = glDrawArraysInstanced(mode, first, count, primcount)
     override fun drawElements(mode: Int, count: Int, type: Int, offset: Long) = glDrawElements(mode, count, type, offset)
+    override fun drawElementsInstanced(mode: Int, count: Int, type: Int, indices: Long, primcount: Int) = glDrawElementsInstanced(mode, count, type, indices, primcount)
+
     override fun genTextures() = OpenGLTexture(glGenTextures())
     override fun bindTexture(target: Int, texture: GLTexture?) = glBindTexture(target, texture?.unwrap() ?: 0)
     override fun activeTexture(texture: Int) = glActiveTexture(texture)
@@ -125,6 +131,8 @@ class OpenGLContext : GLContext() {
     override fun vertexAttribIPointer(index: Int, size: Int, type: Int, stride: Int, offset: Int) = glVertexAttribIPointer(index, size, type, stride, offset.toLong())
     override fun enableVertexAttribArray(index: Int) = glEnableVertexAttribArray(index)
     override fun disableVertexAttribArray(index: Int) = glDisableVertexAttribArray(index)
+    override fun vertexAttribDivisor(index: Int, divisor: Int) = glVertexAttribDivisor(index, divisor)
+
     override fun readPixels(x: Int, y: Int, width: Int, height: Int, format: Int, type: Int): ByteArray {
         val byteBuffer = ByteBuffer.allocateDirect(width * height * 4)
         glReadPixels(x, y, width, height, format, type, byteBuffer)
