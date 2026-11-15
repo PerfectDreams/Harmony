@@ -79,6 +79,8 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun genVertexArrays() = WebGLVertexArrayObject(context.createVertexArray())
     override fun genBuffers() = WebGLBuffer(context.createBuffer())
     override fun blendFunc(src: Int, dst: Int) = context.blendFunc(src.asGLenum(), dst.asGLenum())
+    override fun blendFuncSeparate(srcRGB: Int, dstRGB: Int, srcAlpha: Int, dstAlpha: Int) = context.blendFuncSeparate(srcRGB.asGLenum(), dstRGB.asGLenum(), srcAlpha.asGLenum(), dstAlpha.asGLenum())
+    override fun blendEquation(mode: Int) = context.blendEquation(mode.asGLenum())
     override fun cullFace(mode: Int) = context.cullFace(mode.asGLenum())
     override fun polygonOffset(factor: Float, units: Float) = context.polygonOffset(factor, units)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = context.vertexAttribPointer(index.asGLuint(), size, type.asGLenum(), normalized, stride, offset.toInt())

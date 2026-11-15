@@ -37,6 +37,8 @@ import org.lwjgl.opengl.GL11.glViewport
 import org.lwjgl.opengl.GL12.glTexImage3D
 import org.lwjgl.opengl.GL12.glTexSubImage3D
 import org.lwjgl.opengl.GL13.glActiveTexture
+import org.lwjgl.opengl.GL14.glBlendEquation
+import org.lwjgl.opengl.GL14.glBlendFuncSeparate
 import org.lwjgl.opengl.GL15.glBindBuffer
 import org.lwjgl.opengl.GL15.glBufferData
 import org.lwjgl.opengl.GL15.glBufferSubData
@@ -134,6 +136,8 @@ class OpenGLContext : GLContext() {
     override fun genVertexArrays() = OpenGLVertexArrayObject(glGenVertexArrays())
     override fun genBuffers() = OpenGLBuffer(glGenBuffers())
     override fun blendFunc(src: Int, dst: Int) = glBlendFunc(src, dst)
+    override fun blendFuncSeparate(srcRGB: Int, dstRGB: Int, srcAlpha: Int, dstAlpha: Int) = glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha)
+    override fun blendEquation(mode: Int) = glBlendEquation(mode)
     override fun cullFace(mode: Int) = glCullFace(mode)
     override fun polygonOffset(factor: Float, units: Float) = glPolygonOffset(factor, units)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = glVertexAttribPointer(index, size, type, normalized, stride, offset)
