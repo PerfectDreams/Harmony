@@ -10,6 +10,7 @@ import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLFramebuffer
 import net.perfectdreams.harmony.gl.GLProgram
+import net.perfectdreams.harmony.gl.GLRenderbuffer
 import net.perfectdreams.harmony.gl.GLShader
 import net.perfectdreams.harmony.gl.GLTexture
 import net.perfectdreams.harmony.gl.GLUniformLocation
@@ -34,6 +35,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     private fun GLBuffer.unwrap(): web.gl.WebGLBuffer = (this as WebGLBuffer).handle
     private fun GLVertexArrayObject.unwrap(): web.gl.WebGLVertexArrayObject = (this as WebGLVertexArrayObject).handle
     private fun GLFramebuffer.unwrap(): web.gl.WebGLFramebuffer = (this as WebGLFramebuffer).handle
+    private fun GLRenderbuffer.unwrap(): web.gl.WebGLRenderbuffer = (this as WebGLRenderbuffer).handle
 
     override fun enable(target: Int) = context.enable(target.asGLenum())
     override fun disable(target: Int) = context.disable(target.asGLenum())
@@ -216,8 +218,17 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
         }
     }
     override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture?, level: Int) = context.framebufferTexture2D(target.asGLenum(), attachment.asGLenum(), textarget.asGLenum(), texture?.unwrap(), level)
+    override fun framebufferRenderbuffer(target: Int, attachment: Int, renderbuffertarget: Int, renderbuffer: GLRenderbuffer?) = context.framebufferRenderbuffer(target.asGLenum(), attachment.asGLenum(), renderbuffertarget.asGLenum(), renderbuffer?.unwrap())
     override fun checkFramebufferStatus(target: Int) = unsafeCast<JsNumber>(context.checkFramebufferStatus(target.asGLenum())).toInt()
     override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = context.bindFramebuffer(target.asGLenum(), framebuffer?.unwrap())
+    override fun genRenderbuffers() = WebGLRenderbuffer(context.createRenderbuffer())
+    override fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?) = context.bindRenderbuffer(target.asGLenum(), renderbuffer?.unwrap())
+    override fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int) = context.renderbufferStorage(target.asGLenum(), internalFormat.asGLenum(), width, height)
+    override fun deleteRenderbuffers(values: List<GLRenderbuffer>) {
+        for (renderbuffer in values) {
+            context.deleteRenderbuffer(renderbuffer.unwrap())
+        }
+    }
     override fun drawBuffers(buffers: IntArray) = context.drawBuffers(buffers.map { it.asGLenum() }.toJsArray())
     override fun readBuffer(src: Int) = context.readBuffer(src.asGLenum())
 

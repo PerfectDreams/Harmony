@@ -5,6 +5,7 @@ import net.perfectdreams.harmony.gl.GLBuffer
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLFramebuffer
 import net.perfectdreams.harmony.gl.GLProgram
+import net.perfectdreams.harmony.gl.GLRenderbuffer
 import net.perfectdreams.harmony.gl.GLShader
 import net.perfectdreams.harmony.gl.GLTexture
 import net.perfectdreams.harmony.gl.GLUniformLocation
@@ -67,14 +68,19 @@ import org.lwjgl.opengl.GL20.glUniformMatrix4fv
 import org.lwjgl.opengl.GL20.glUseProgram
 import org.lwjgl.opengl.GL20.glVertexAttribPointer
 import org.lwjgl.opengl.GL30.glBindFramebuffer
+import org.lwjgl.opengl.GL30.glBindRenderbuffer
 import org.lwjgl.opengl.GL30.glBindVertexArray
 import org.lwjgl.opengl.GL30.glCheckFramebufferStatus
 import org.lwjgl.opengl.GL30.glDeleteFramebuffers
+import org.lwjgl.opengl.GL30.glDeleteRenderbuffers
 import org.lwjgl.opengl.GL30.glDeleteVertexArrays
+import org.lwjgl.opengl.GL30.glFramebufferRenderbuffer
 import org.lwjgl.opengl.GL30.glFramebufferTexture2D
 import org.lwjgl.opengl.GL30.glGenFramebuffers
+import org.lwjgl.opengl.GL30.glGenRenderbuffers
 import org.lwjgl.opengl.GL30.glGenVertexArrays
 import org.lwjgl.opengl.GL30.glGenerateMipmap
+import org.lwjgl.opengl.GL30.glRenderbufferStorage
 import org.lwjgl.opengl.GL30.glVertexAttribIPointer
 import org.lwjgl.opengl.GL31.glDrawArraysInstanced
 import org.lwjgl.opengl.GL31.glDrawElementsInstanced
@@ -88,6 +94,7 @@ class OpenGLContext : GLContext() {
     private fun GLProgram.unwrap(): Int = (this as OpenGLProgram).id
     private fun GLBuffer.unwrap(): Int = (this as OpenGLBuffer).id
     private fun GLFramebuffer.unwrap(): Int = (this as OpenGLFramebuffer).id
+    private fun GLRenderbuffer.unwrap(): Int = (this as OpenGLRenderbuffer).id
     private fun GLShader.unwrap(): Int = (this as OpenGLShader).id
     private fun GLUniformLocation.unwrap(): Int = (this as OpenGLUniformLocation).id
     private fun GLVertexArrayObject.unwrap(): Int = (this as OpenGLVertexArrayObject).id
@@ -246,8 +253,13 @@ class OpenGLContext : GLContext() {
     override fun genFramebuffers() = OpenGLFramebuffer(glGenFramebuffers())
     override fun deleteFramebuffers(values: List<GLFramebuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteFramebuffers(it) }
     override fun framebufferTexture2D(target: Int, attachment: Int, textarget: Int, texture: GLTexture?, level: Int) = glFramebufferTexture2D(target, attachment, textarget, texture?.unwrap() ?: 0, level)
+    override fun framebufferRenderbuffer(target: Int, attachment: Int, renderbuffertarget: Int, renderbuffer: GLRenderbuffer?) = glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer?.unwrap() ?: 0)
     override fun checkFramebufferStatus(target: Int) = glCheckFramebufferStatus(target)
     override fun bindFramebuffer(target: Int, framebuffer: GLFramebuffer?) = glBindFramebuffer(target, framebuffer?.unwrap() ?: 0)
+    override fun genRenderbuffers() = OpenGLRenderbuffer(glGenRenderbuffers())
+    override fun bindRenderbuffer(target: Int, renderbuffer: GLRenderbuffer?) = glBindRenderbuffer(target, renderbuffer?.unwrap() ?: 0)
+    override fun renderbufferStorage(target: Int, internalFormat: Int, width: Int, height: Int) = glRenderbufferStorage(target, internalFormat, width, height)
+    override fun deleteRenderbuffers(values: List<GLRenderbuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteRenderbuffers(it) }
     override fun drawBuffers(buffers: IntArray) = glDrawBuffers(buffers)
     override fun readBuffer(src: Int) = glReadBuffer(src)
 

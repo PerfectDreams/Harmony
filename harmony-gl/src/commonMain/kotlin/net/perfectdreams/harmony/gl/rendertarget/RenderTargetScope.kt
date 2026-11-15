@@ -13,8 +13,11 @@ class RenderTargetScope(val gpu: GPUResources, val renderTarget: RenderTarget) {
         val depthState = pipeline.depth
 
         if (depthState != null) {
-            if (renderTarget is Framebuffer && renderTarget.depthTexture == null)
-                error("You cannot enable a depth state on a framebuffer that does not have a depth texture!")
+            if (renderTarget is Framebuffer) {
+                val hasDepth = renderTarget.attachments.depthStencilAttachment?.format?.hasDepth ?: false
+                if (!hasDepth)
+                    error("You cannot enable a depth state on a framebuffer that does not have a depth stencil attachment!")
+            }
 
             gpu.gl.enable(GLConstants.GL_DEPTH_TEST)
             gpu.gl.depthFunc(depthState.compare.glValue)

@@ -1,7 +1,11 @@
 package net.perfectdreams.harmony.gl
 
+import net.perfectdreams.harmony.gl.GLConstants.GL_RENDERBUFFER
 import net.perfectdreams.harmony.gl.framebuffers.Framebuffer
+import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachment
+import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachments
 import net.perfectdreams.harmony.gl.pipelines.CompareFunc
+import net.perfectdreams.harmony.gl.renderbuffers.Renderbuffer
 import net.perfectdreams.harmony.gl.rendertarget.RenderTarget
 import net.perfectdreams.harmony.gl.rendertarget.RenderTargetScope
 import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
@@ -9,6 +13,7 @@ import net.perfectdreams.harmony.gl.rendertarget.withRenderTarget
 import net.perfectdreams.harmony.gl.shaders.ShaderProgram
 import net.perfectdreams.harmony.gl.textures.Texture
 import net.perfectdreams.harmony.gl.textures.TextureArray
+import net.perfectdreams.harmony.gl.textures.TextureFormat
 import net.perfectdreams.harmony.gl.textures.TextureGrid
 
 class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: Int) {
@@ -78,18 +83,30 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
         // When shrinking the image, pixelate
         gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MAG_FILTER, magFilter)
 
+        val format = TextureFormat.RGBA8
         gl.texImage2D(
             GLConstants.GL_TEXTURE_2D,
             0,
-            GLConstants.GL_RGBA,
+            format.internalFormat,
             width,
             height,
             0,
-            GLConstants.GL_RGBA,
-            GLConstants.GL_UNSIGNED_BYTE
+            format.format,
+            format.type
         )
 
-        return Texture(gl, textureId, width, height)
+        return Texture(gl, textureId, format, width, height)
+    }
+
+    fun createRenderbuffer(
+        width: Int,
+        height: Int,
+        format: TextureFormat
+    ): Renderbuffer {
+        val renderbufferId = gl.genRenderbuffers()
+        gl.bindRenderbuffer(GL_RENDERBUFFER, renderbufferId)
+        gl.renderbufferStorage(GL_RENDERBUFFER, format.internalFormat, width, height)
+        return Renderbuffer(gl, renderbufferId, format, width, height)
     }
 
     fun createTextureArray(
@@ -161,10 +178,10 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
             gl.texParameteri(GLConstants.GL_TEXTURE_2D, GLConstants.GL_TEXTURE_MAG_FILTER, GLConstants.GL_NEAREST)
         }
 
-        // WebGL2 requires UNSIGNED_INT for DEPTH_COMPONENT24
-        gl.texImage2D(GLConstants.GL_TEXTURE_2D, 0, GLConstants.GL_DEPTH_COMPONENT24, width, height, 0, GLConstants.GL_DEPTH_COMPONENT, GLConstants.GL_UNSIGNED_INT)
+        val format = TextureFormat.DEPTH24
+        gl.texImage2D(GLConstants.GL_TEXTURE_2D, 0, format.internalFormat, width, height, 0, format.format, format.type)
 
-        return Texture(gl, textureId, width, height)
+        return Texture(gl, textureId, format, width, height)
     }
 
     fun createFramebuffer(
@@ -186,25 +203,83 @@ class GPUResources(val gl: GLContext, val initialWidth: Int, val initialHeight: 
     }
 
     fun createFramebuffer(colorTexture: Texture?, depthTexture: Texture?): Framebuffer {
+        val colorAttachments = mutableMapOf<Int, FramebufferAttachment>()
+        if (colorTexture != null) {
+            colorAttachments[0] = FramebufferAttachment.TextureAttachment(colorTexture)
+        }
+        return createFramebuffer(FramebufferAttachments(colorAttachments, depthTexture?.let { FramebufferAttachment.TextureAttachment(it) }))
+    }
+
+    fun createFramebuffer(attachments: FramebufferAttachments): Framebuffer {
         val framebufferId = gl.genFramebuffers()
 
         gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, framebufferId)
-        if (colorTexture != null) {
-            gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0, GLConstants.GL_TEXTURE_2D, colorTexture.textureId, 0)
-        } else {
+
+        var targetWidth = -1
+        var targetHeight = -1
+
+        fun updateTargetDimensions(width: Int, height: Int) {
+            if (targetWidth == -1)
+                targetWidth = width
+            if (targetHeight == -1)
+                targetHeight = height
+            require(targetWidth == width && targetHeight == height) { "Found a ${width}x${height} attachment on a ${targetWidth}x${targetHeight} framebuffer!" }
+        }
+
+        for ((attachmentIndex, attachment) in attachments.colorAttachments) {
+            when (attachment) {
+                is FramebufferAttachment.TextureAttachment -> {
+                    updateTargetDimensions(attachment.width, attachment.height)
+                    gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GLConstants.GL_TEXTURE_2D, attachment.texture.textureId, 0)
+                }
+                is FramebufferAttachment.RenderbufferAttachment -> {
+                    updateTargetDimensions(attachment.width, attachment.height)
+                    gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GL_RENDERBUFFER, attachment.renderbuffer.renderbufferId)
+                }
+            }
+        }
+
+        if (attachments.colorAttachments.isEmpty()) {
             // Framebuffers draw to and read from COLOR_ATTACHMENT0 by default, without a color attachment desktop OpenGL (pre-4.1) considers the framebuffer incomplete
             // OpenGL (Medium): [Other] FBO incomplete: missing drawbuffer [0]
             // Test it by using "MESA_GL_VERSION_OVERRIDE=3.3 MESA_EXTENSION_OVERRIDE="-GL_ARB_ES2_compatibility""
             gl.drawBuffers(intArrayOf(GLConstants.GL_NONE))
             gl.readBuffer(GLConstants.GL_NONE)
+        } else {
+            val max = attachments.colorAttachments.keys.max()
+
+            val array = IntArray(max + 1)
+
+            for (i in 0..max) {
+                val contains = attachments.colorAttachments.containsKey(i)
+                array[i] = if (contains)
+                    GLConstants.GL_COLOR_ATTACHMENT0 + i
+                else
+                    GLConstants.GL_NONE
+            }
+
+            gl.drawBuffers(array)
+            gl.readBuffer(GLConstants.GL_COLOR_ATTACHMENT0 + attachments.colorAttachments.keys.min())
         }
-        if (depthTexture != null)
-            gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_DEPTH_ATTACHMENT, GLConstants.GL_TEXTURE_2D, depthTexture.textureId, 0)
+
+        if (attachments.depthStencilAttachment != null) {
+            when (attachments.depthStencilAttachment) {
+                is FramebufferAttachment.TextureAttachment -> {
+                    updateTargetDimensions(attachments.depthStencilAttachment.width, attachments.depthStencilAttachment.height)
+                    gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, attachments.depthStencilAttachment.format.depthStencilAttachmentPoint, GLConstants.GL_TEXTURE_2D, attachments.depthStencilAttachment.texture.textureId, 0)
+                }
+                is FramebufferAttachment.RenderbufferAttachment -> {
+                    updateTargetDimensions(attachments.depthStencilAttachment.width, attachments.depthStencilAttachment.height)
+                    gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, attachments.depthStencilAttachment.format.depthStencilAttachmentPoint, GL_RENDERBUFFER, attachments.depthStencilAttachment.renderbuffer.renderbufferId)
+                }
+            }
+        }
+
         val status = gl.checkFramebufferStatus(GLConstants.GL_FRAMEBUFFER)
         check(status == GLConstants.GL_FRAMEBUFFER_COMPLETE) { "Framebuffer is incomplete! Status: 0x${status.toString(16)}" }
         gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, null)
 
-        return Framebuffer(gl, framebufferId, colorTexture, depthTexture)
+        return Framebuffer(gl, framebufferId, attachments, targetWidth, targetHeight)
     }
 
     /**

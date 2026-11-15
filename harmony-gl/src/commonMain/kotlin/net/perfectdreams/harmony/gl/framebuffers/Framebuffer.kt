@@ -4,28 +4,29 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_FRAMEBUFFER
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLFramebuffer
 import net.perfectdreams.harmony.gl.rendertarget.RenderTarget
-import net.perfectdreams.harmony.gl.textures.Texture
 
 class Framebuffer(
     gl: GLContext,
     val framebufferId: GLFramebuffer,
-    val colorTexture: Texture?,
-    val depthTexture: Texture?
-) : AutoCloseable, RenderTarget(gl) {
-    private val sizeTexture = requireNotNull(colorTexture ?: depthTexture) { "A framebuffer needs at least a color texture or a depth texture!" }
-
-    override val width: Int
-        get() = sizeTexture.width
+    val attachments: FramebufferAttachments,
+    override val width: Int,
     override val height: Int
-        get() = sizeTexture.height
-
+) : AutoCloseable, RenderTarget(gl) {
     override fun close() {
         gl.deleteFramebuffer(framebufferId)
 
-        if (this.colorTexture != null)
-            gl.deleteTexture(colorTexture.textureId)
-        if (this.depthTexture != null)
-            gl.deleteTexture(depthTexture.textureId)
+        fun deleteAttachment(attachment: FramebufferAttachment) {
+            when (attachment) {
+                is FramebufferAttachment.TextureAttachment -> attachment.texture.close()
+                is FramebufferAttachment.RenderbufferAttachment -> attachment.renderbuffer.close()
+            }
+        }
+
+        for (attachment in attachments.colorAttachments) {
+            deleteAttachment(attachment.value)
+        }
+
+        attachments.depthStencilAttachment?.let { deleteAttachment(it) }
     }
 }
 

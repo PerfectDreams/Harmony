@@ -279,7 +279,7 @@ fun main() {
 
             // Decode the image
             val decodedImage = STBImage.stbi_load_from_memory(
-                imageBuffer,
+                imageBuffer2,
                 w,
                 h,
                 channels,
@@ -464,7 +464,7 @@ fun main() {
                             0.0f,
                             1.0f,
                             1.0f,
-                            framebuffer.colorTexture!!,
+                            framebuffer.attachments.color0Texture,
                             1.0f,
                             1.0f,
                             1.0f,
