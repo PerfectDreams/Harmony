@@ -64,6 +64,7 @@ class VertexAttributesBuilder {
         reserve(size * typeSize)
     }
 
+    fun float(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 1, GL_FLOAT, false, divisor)
     fun vec2(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 2, GL_FLOAT, false, divisor)
     fun vec3(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 3, GL_FLOAT, false, divisor)
     fun vec4(index: Int, divisor: Int = 0) = vertexAttribPointer(index, 4, GL_FLOAT, false, divisor)
