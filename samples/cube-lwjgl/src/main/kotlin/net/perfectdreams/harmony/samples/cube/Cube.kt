@@ -325,8 +325,6 @@ fun main() {
     )
     texture.writeSection(textureSource2, 128, 128)
 
-    gl.enable(GLConstants.GL_DEPTH_TEST)
-
     val batcher = SpriteBatcher(gl)
 
     var cameraX = 0f
@@ -506,8 +504,6 @@ fun main() {
                     }
                 }
             }
-
-            gl.enable(GLConstants.GL_DEPTH_TEST)
 
             SDL_GL_SwapWindow(window)
         }

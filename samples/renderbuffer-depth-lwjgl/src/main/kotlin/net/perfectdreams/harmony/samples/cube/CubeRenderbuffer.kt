@@ -97,6 +97,7 @@ fun main() {
             in vec3 vWorldPosition;
             layout(location = 0) out vec4 FragColor;
             layout(location = 1) out vec4 RColor;
+            layout(location = 2) out vec4 RSolid;
             
             void main() {
                 vec3 normal = normalize(vNormal);
@@ -106,6 +107,7 @@ fun main() {
                 vec4 texColor = texture(uTexture, vTexCoord);
                 FragColor = vec4(texColor.r * (facing * 0.75), texColor.g * (facing * 0.75), texColor.b * facing, texColor.a);
                 RColor = vec4(vNormal, 1.0);
+                RSolid = vec4(1.0, 0.0, 0.0, 1.0);
             }
         """.trimIndent()
 
@@ -212,6 +214,55 @@ fun main() {
         ::UIShader
     )
 
+    val outlineShader = gpu.createShader(
+        """
+            #version 330 core
+            layout(location = 0) in vec2 aPosition;
+            layout(location = 1) in vec2 aTexCoord;
+            layout(location = 2) in vec4 aBlendColor;
+            
+            uniform mat4 uProjection;
+            
+            out vec2 vTexCoord;
+            out vec4 vBlendColor;
+            
+            void main() {
+                gl_Position = uProjection * vec4(aPosition, 0.0, 1.0);
+                vTexCoord = aTexCoord;
+                vBlendColor = aBlendColor;
+            }
+        """.trimIndent(),
+        """
+            #version 330 core
+            uniform sampler2D uTexture;
+            
+            in vec2 vTexCoord;
+            in vec4 vBlendColor;
+            
+            out vec4 fragColor;
+            
+            void main() {
+                vec4 sampled = texture(uTexture, vTexCoord);
+                
+                float threshold = 0.015;
+                
+                vec4 aroundLeft = texture(uTexture, vTexCoord + vec2(-threshold, 0.0));
+                vec4 aroundTop = texture(uTexture, vTexCoord + vec2(0.0, threshold));
+                vec4 aroundBottom = texture(uTexture, vTexCoord + vec2(0.0, -threshold));
+                vec4 aroundRight = texture(uTexture, vTexCoord + vec2(threshold, 0.0));
+                
+                float around = max(aroundLeft.r, max(aroundTop.r, max(aroundBottom.r, aroundRight.r)));
+                
+                if (0.5 > sampled.r && around >= 0.5) {
+                    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                } else {
+                    fragColor = vec4(0.0, 0.0, 0.0, 0.0);
+                }
+            }
+        """.trimIndent(),
+        ::UIShader
+    )
+
     val projection = Matrix4f().perspective(45f, 16f / 9f, 0.1f, 100f)
 
     stbi_set_flip_vertically_on_load(true)
@@ -251,7 +302,8 @@ fun main() {
         FramebufferAttachments(
             mapOf(
                 0 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
-                1 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4))
+                1 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
+                2 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
             ),
             depthStencilAttachment = FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.DEPTH24, 4))
         )
@@ -274,6 +326,24 @@ fun main() {
         GLConstants.GL_NEAREST,
         GLConstants.GL_NEAREST
     )
+    val outlineSolidFramebuffer = gpu.createFramebuffer(
+        160,
+        90,
+        null,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_NEAREST,
+        GLConstants.GL_NEAREST
+    )
+    val outlineFramebuffer = gpu.createFramebuffer(
+        160,
+        90,
+        null,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_NEAREST,
+        GLConstants.GL_NEAREST
+    )
     val framebufferBlitTarget = gpu.createFramebuffer(
         FramebufferAttachments(
             mapOf(),
@@ -288,9 +358,9 @@ fun main() {
         GLConstants.GL_LINEAR
     )
 
-    gl.enable(GLConstants.GL_DEPTH_TEST)
-
     val batcher = SpriteBatcher(gl)
+
+    val tinyUiProjection = Matrix4f().ortho(0f, 160f, 90f, 0f, -1f, 1f)
     val uiProjection = Matrix4f().ortho(0f, 1280f, 720f, 0f, -1f, 1f)
 
     val cameraX = 0f
@@ -310,7 +380,6 @@ fun main() {
                     running = false
             }
 
-            gl.enable(GLConstants.GL_DEPTH_TEST)
 
             gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
                 withPipeline(Pipeline(shader, depth = DepthState(write = true), blend = BlendState.AlphaBlending)) {
@@ -366,6 +435,36 @@ fun main() {
                 overrideDrawBuffers = null,
             )
 
+            framebuffer.blitTo(
+                outlineSolidFramebuffer,
+                GL_NEAREST,
+                copyColor = true,
+                copyDepth = false,
+                copyStencil = false,
+                overrideReadBuffer = GLConstants.GL_COLOR_ATTACHMENT2,
+                overrideDrawBuffers = null,
+            )
+
+            gpu.onRenderTarget(outlineFramebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
+                withSpritePipeline(batcher, outlineShader) {
+                    this.shader.uProjection.set(tinyUiProjection.get(FloatArray(16)))
+
+                    it.drawBatch(this) {
+                        drawQuad(
+                            0f,
+                            0f,
+                            160f,
+                            90f,
+                            0f,
+                            1f,
+                            1f,
+                            0f,
+                            outlineSolidFramebuffer.attachments.color0Texture
+                        )
+                    }
+                }
+            }
+
             gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(uiProjection.get(FloatArray(16)))
@@ -401,6 +500,22 @@ fun main() {
 
                         drawQuad(
                             0f,
+                            0f,
+                            1280f,
+                            720f,
+                            0f,
+                            1f,
+                            1f,
+                            0f,
+                            outlineFramebuffer.attachments.color0Texture,
+                            1.0f,
+                            1.0f,
+                            1.0f,
+                            1.0f
+                        )
+
+                        drawQuad(
+                            0f,
                             180f,
                             320f,
                             180f,
@@ -409,6 +524,30 @@ fun main() {
                             1f,
                             0f,
                             targetFramebuffer2.attachments.color0Texture
+                        )
+
+                        drawQuad(
+                            0f,
+                            360f,
+                            320f,
+                            180f,
+                            0f,
+                            1f,
+                            1f,
+                            0f,
+                            outlineSolidFramebuffer.attachments.color0Texture
+                        )
+
+                        drawQuad(
+                            0f,
+                            540f,
+                            320f,
+                            180f,
+                            0f,
+                            1f,
+                            1f,
+                            0f,
+                            outlineFramebuffer.attachments.color0Texture
                         )
 
                         drawQuad(
@@ -424,9 +563,9 @@ fun main() {
                         )
                     }
                 }
-            }
 
-            SDL_GL_SwapWindow(window)
+                SDL_GL_SwapWindow(window)
+            }
         }
     }
 }
