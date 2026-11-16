@@ -27,6 +27,7 @@ import net.perfectdreams.harmony.render.textures.withTexture
 
 class RenderDevice(val gl: GLContext) {
     val white1x1Texture = create1x1Texture(0xFF, 0xFF, 0xFF, 0xFF)
+    private var isInsideARenderTarget = false
 
     fun create1x1Texture(red: Int, green: Int, blue: Int, alpha: Int) = createTexture(
         ByteArrayTextureSource(1, 1, byteArrayOf(red.toByte(), green.toByte(), blue.toByte(), alpha.toByte())),
@@ -373,49 +374,58 @@ class RenderDevice(val gl: GLContext) {
         clear: ClearOptions,
         block: RenderTargetScope.() -> (Unit)
     ) {
-        val scope = RenderTargetScope(this, target)
+        require(!this.isInsideARenderTarget) { "You cannot nest onRenderTarget calls!" }
+        try {
+            this.isInsideARenderTarget = true
 
-        val innerBlock = {
-            val color = clear.color
-            val depth = clear.depth
-            val stencil = clear.stencil
+            val scope = RenderTargetScope(this, target)
 
-            var mask = 0
-            if (color != null) {
-                gl.clearColor(color.red, color.green, color.blue, color.alpha)
-                mask = mask or GLConstants.GL_COLOR_BUFFER_BIT
+            val innerBlock = {
+                val color = clear.color
+                val depth = clear.depth
+                val stencil = clear.stencil
+
+                var mask = 0
+                if (color != null) {
+                    gl.clearColor(color.red, color.green, color.blue, color.alpha)
+                    mask = mask or GLConstants.GL_COLOR_BUFFER_BIT
+                }
+
+                if (depth != null) {
+                    // Yes, this is needed if we are clearing the buffer because glClear respects this!
+                    gl.depthMask(true)
+                    gl.clearDepth(depth)
+                    mask = mask or GLConstants.GL_DEPTH_BUFFER_BIT
+                }
+
+                if (stencil != null) {
+                    // Yes, this is needed if we are clearing the buffer because glClear respects this!
+                    gl.stencilMask(0xFF)
+                    gl.clearStencil(stencil)
+                    mask = mask or GLConstants.GL_STENCIL_BUFFER_BIT
+                }
+
+                if (mask != 0)
+                    gl.clear(mask)
             }
 
-            if (depth != null) {
-                // Yes, this is needed if we are clearing the buffer because glClear respects this!
-                gl.depthMask(true)
-                gl.clearDepth(depth)
-                mask = mask or GLConstants.GL_DEPTH_BUFFER_BIT
-            }
+            when (target) {
+                is Framebuffer -> return target.withFramebuffer {
+                    innerBlock()
+                    block(scope)
+                }
 
-            if (stencil != null) {
-                // Yes, this is needed if we are clearing the buffer because glClear respects this!
-                gl.stencilMask(0xFF)
-                gl.clearStencil(stencil)
-                mask = mask or GLConstants.GL_STENCIL_BUFFER_BIT
-            }
+                is WindowRenderTarget -> {
+                    gl.bindFramebuffer(GL_FRAMEBUFFER, null)
+                    gl.viewport(0, 0, target.width, target.height)
+                    innerBlock()
+                    block(scope)
+                }
 
-            if (mask != 0)
-                gl.clear(mask)
-        }
-
-        when (target) {
-            is Framebuffer -> return target.withFramebuffer {
-                innerBlock()
-                block(scope)
+                else -> error("I don't know how to render to $target!")
             }
-            is WindowRenderTarget -> {
-                gl.bindFramebuffer(GL_FRAMEBUFFER, null)
-                gl.viewport(0, 0, target.width, target.height)
-                innerBlock()
-                block(scope)
-            }
-            else -> error("I don't know how to render to $target!")
+        } finally {
+            this.isInsideARenderTarget = false
         }
     }
 }

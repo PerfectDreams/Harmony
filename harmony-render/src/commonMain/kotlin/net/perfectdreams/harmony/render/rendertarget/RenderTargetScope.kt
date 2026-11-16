@@ -9,55 +9,63 @@ import net.perfectdreams.harmony.render.shaders.ShaderProgram
 import net.perfectdreams.harmony.render.shaders.withProgram
 
 class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget) {
-    fun <T : ShaderProgram> withPipeline(pipeline: Pipeline<T>, block: PipelineScope<T>.() -> (Unit)) {
-        val depthState = pipeline.depth
-        val blendState = pipeline.blend
-        val cullState = pipeline.cull
+    private var isInsideAPipeline = false
 
-        if (depthState != null) {
-            if (renderTarget is Framebuffer) {
-                val hasDepth = renderTarget.attachments.depthStencilAttachment?.format?.hasDepth ?: false
-                if (!hasDepth)
-                    error("You cannot enable a depth state on a framebuffer that does not have a depth stencil attachment!")
+    fun <T : ShaderProgram> withPipeline(pipeline: Pipeline<T>, block: PipelineScope<T>.() -> (Unit)) {
+        require(!this.isInsideAPipeline) { "You cannot nest withPipeline calls!" }
+        try {
+            this.isInsideAPipeline = true
+            val depthState = pipeline.depth
+            val blendState = pipeline.blend
+            val cullState = pipeline.cull
+
+            if (depthState != null) {
+                if (renderTarget is Framebuffer) {
+                    val hasDepth = renderTarget.attachments.depthStencilAttachment?.format?.hasDepth ?: false
+                    if (!hasDepth)
+                        error("You cannot enable a depth state on a framebuffer that does not have a depth stencil attachment!")
+                }
+
+                gpu.gl.enable(GLConstants.GL_DEPTH_TEST)
+                gpu.gl.depthFunc(depthState.compare.glValue)
+                gpu.gl.depthMask(depthState.write)
+            } else {
+                // Yes this is weird, but we actually need to set this to revert to the "defaults"
+                // Example: If a pipeline uses depthMask=false and another pipeline sets a depth state to null, it WILL cause issues!
+                gpu.gl.depthFunc(GLConstants.GL_LESS)
+                gpu.gl.depthMask(true)
+                gpu.gl.disable(GLConstants.GL_DEPTH_TEST)
             }
 
-            gpu.gl.enable(GLConstants.GL_DEPTH_TEST)
-            gpu.gl.depthFunc(depthState.compare.glValue)
-            gpu.gl.depthMask(depthState.write)
-        } else {
-            // Yes this is weird, but we actually need to set this to revert to the "defaults"
-            // Example: If a pipeline uses depthMask=false and another pipeline sets a depth state to null, it WILL cause issues!
-            gpu.gl.depthFunc(GLConstants.GL_LESS)
-            gpu.gl.depthMask(true)
-            gpu.gl.disable(GLConstants.GL_DEPTH_TEST)
-        }
+            if (blendState != null) {
+                gpu.gl.enable(GLConstants.GL_BLEND)
+                gpu.gl.blendFuncSeparate(
+                    blendState.srcColor,
+                    blendState.dstColor,
+                    blendState.srcAlpha,
+                    blendState.dstAlpha
+                )
+                gpu.gl.blendEquationSeparate(
+                    blendState.colorEquation,
+                    blendState.alphaEquation
+                )
+            } else {
+                gpu.gl.disable(GLConstants.GL_BLEND)
+            }
 
-        if (blendState != null) {
-            gpu.gl.enable(GLConstants.GL_BLEND)
-            gpu.gl.blendFuncSeparate(
-                blendState.srcColor,
-                blendState.dstColor,
-                blendState.srcAlpha,
-                blendState.dstAlpha
-            )
-            gpu.gl.blendEquationSeparate(
-                blendState.colorEquation,
-                blendState.alphaEquation
-            )
-        } else {
-            gpu.gl.disable(GLConstants.GL_BLEND)
-        }
+            if (cullState != null) {
+                gpu.gl.enable(GLConstants.GL_CULL_FACE)
+                gpu.gl.cullFace(cullState.face.glValue)
+            } else {
+                gpu.gl.disable(GLConstants.GL_CULL_FACE)
+            }
 
-        if (cullState != null) {
-            gpu.gl.enable(GLConstants.GL_CULL_FACE)
-            gpu.gl.cullFace(cullState.face.glValue)
-        } else {
-            gpu.gl.disable(GLConstants.GL_CULL_FACE)
-        }
-
-        val scope = PipelineScope(pipeline.shader)
-        pipeline.shader.withProgram {
-            block(scope)
+            val scope = PipelineScope(pipeline.shader)
+            pipeline.shader.withProgram {
+                block(scope)
+            }
+        } finally {
+            this.isInsideAPipeline = false
         }
     }
 }
