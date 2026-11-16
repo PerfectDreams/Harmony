@@ -2,8 +2,7 @@ package net.perfectdreams.harmony.samples.cube
 
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLProgram
-import net.perfectdreams.harmony.gl.shaders.ShaderProgram
-import net.perfectdreams.harmony.graphics.batcher.SpriteShader
+import net.perfectdreams.harmony.render.batcher.SpriteShader
 
 class UIShader(gl: GLContext, programId: GLProgram) : SpriteShader(gl, programId) {
     val uProjection = this.uniformMatrix4fv("uProjection")

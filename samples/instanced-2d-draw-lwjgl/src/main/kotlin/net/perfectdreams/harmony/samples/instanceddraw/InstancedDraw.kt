@@ -11,12 +11,12 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_LINEAR
 import net.perfectdreams.harmony.gl.GLConstants.GL_STATIC_DRAW
 import net.perfectdreams.harmony.gl.GLConstants.GL_TRIANGLES
 import net.perfectdreams.harmony.gl.GLConstants.GL_UNSIGNED_INT
-import net.perfectdreams.harmony.gl.GPUResources
 import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
-import net.perfectdreams.harmony.gl.pipelines.Pipeline
-import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
-import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
+import net.perfectdreams.harmony.render.RenderDevice
+import net.perfectdreams.harmony.render.pipelines.Pipeline
+import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
+import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f
 import org.lwjgl.opengl.GL
 import org.lwjgl.sdl.SDLError.SDL_GetError
@@ -55,7 +55,7 @@ fun main() {
     SDL_GL_SetSwapInterval(1) // vsync
 
     val gl = OpenGLContext()
-    val gpu = GPUResources(gl)
+    val gpu = RenderDevice(gl)
     val windowRenderTarget = WindowRenderTarget(1280, 720)
 
     val vao = gl.genVertexArrays()

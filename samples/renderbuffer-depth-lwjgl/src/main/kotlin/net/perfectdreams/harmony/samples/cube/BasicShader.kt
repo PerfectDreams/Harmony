@@ -2,7 +2,7 @@ package net.perfectdreams.harmony.samples.cube
 
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLProgram
-import net.perfectdreams.harmony.gl.shaders.ShaderProgram
+import net.perfectdreams.harmony.render.shaders.ShaderProgram
 
 class BasicShader(gl: GLContext, programId: GLProgram) : ShaderProgram(gl, programId) {
     val uProjection = this.uniformMatrix4fv("uProjection")

@@ -5,6 +5,7 @@ rootProject.name = "HarmonyFramework"
 
 include(":harmony-wasm-utils")
 include(":harmony-gl")
+include(":harmony-render")
 include(":harmony-opengl-lwjgl")
 include(":harmony-webgl2")
 

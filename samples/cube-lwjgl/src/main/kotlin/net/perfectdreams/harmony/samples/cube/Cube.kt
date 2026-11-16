@@ -7,16 +7,16 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_CLAMP_TO_EDGE
 import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_NEAREST
 import net.perfectdreams.harmony.gl.GLConstants.GL_STATIC_DRAW
-import net.perfectdreams.harmony.graphics.batcher.SpriteBatcher
 import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
-import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
-import net.perfectdreams.harmony.gl.GPUResources
-import net.perfectdreams.harmony.gl.pipelines.DepthState
-import net.perfectdreams.harmony.gl.pipelines.Pipeline
-import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
-import net.perfectdreams.harmony.gl.textures.TextureFormat
-import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
+import net.perfectdreams.harmony.render.RenderDevice
+import net.perfectdreams.harmony.render.batcher.SpriteBatcher
+import net.perfectdreams.harmony.render.batcher.withSpritePipeline
+import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
+import net.perfectdreams.harmony.render.pipelines.Pipeline
+import net.perfectdreams.harmony.render.pipelines.DepthState
+import net.perfectdreams.harmony.render.textures.TextureFormat
+import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f
 import org.lwjgl.opengl.GL
 import org.lwjgl.sdl.SDLError.SDL_GetError
@@ -92,7 +92,7 @@ fun main() {
         pixelWidth.get(0) to pixelHeight.get(0)
     }
 
-    val gpu = GPUResources(gl)
+    val gpu = RenderDevice(gl)
     val windowRenderTarget = WindowRenderTarget(initialPixelWidth, initialPixelHeight)
 
     val vao = gl.genVertexArrays()

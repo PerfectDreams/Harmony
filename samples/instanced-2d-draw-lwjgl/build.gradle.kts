@@ -12,6 +12,7 @@ val lwjglNatives = findProperty("lwjglNativesPlatform") ?: "natives-linux"
 
 dependencies {
     api(project(":harmony-opengl-lwjgl"))
+    api(project(":harmony-render"))
 
     implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
 

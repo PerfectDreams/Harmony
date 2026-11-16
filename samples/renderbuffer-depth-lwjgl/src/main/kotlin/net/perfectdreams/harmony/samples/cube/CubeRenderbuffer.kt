@@ -5,45 +5,28 @@ import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLConstants.GL_ARRAY_BUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_CLAMP_TO_EDGE
 import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
-import net.perfectdreams.harmony.gl.GLConstants.GL_LINEAR
 import net.perfectdreams.harmony.gl.GLConstants.GL_NEAREST
 import net.perfectdreams.harmony.gl.GLConstants.GL_STATIC_DRAW
-import net.perfectdreams.harmony.graphics.batcher.SpriteBatcher
 import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
-import net.perfectdreams.harmony.gl.vertex.buildVertexAttributes
-import net.perfectdreams.harmony.gl.GPUResources
-import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachment
-import net.perfectdreams.harmony.gl.framebuffers.FramebufferAttachments
-import net.perfectdreams.harmony.gl.pipelines.CompareFunc
-import net.perfectdreams.harmony.gl.pipelines.DepthState
-import net.perfectdreams.harmony.gl.pipelines.Pipeline
-import net.perfectdreams.harmony.gl.rendertarget.WindowRenderTarget
-import net.perfectdreams.harmony.gl.textures.TextureFormat
-import net.perfectdreams.harmony.graphics.batcher.withSpritePipeline
+import net.perfectdreams.harmony.render.RenderDevice
+import net.perfectdreams.harmony.render.batcher.SpriteBatcher
+import net.perfectdreams.harmony.render.batcher.withSpritePipeline
+import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachment
+import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachments
+import net.perfectdreams.harmony.render.pipelines.DepthState
+import net.perfectdreams.harmony.render.pipelines.Pipeline
+import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
+import net.perfectdreams.harmony.render.textures.TextureFormat
+import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f
 import org.lwjgl.opengl.GL
 import org.lwjgl.sdl.SDLError.SDL_GetError
 import org.lwjgl.sdl.SDLEvents.SDL_EVENT_QUIT
 import org.lwjgl.sdl.SDLEvents.SDL_PollEvent
-import org.lwjgl.sdl.SDLInit.SDL_INIT_AUDIO
-import org.lwjgl.sdl.SDLInit.SDL_INIT_VIDEO
-import org.lwjgl.sdl.SDLInit.SDL_Init
+import org.lwjgl.sdl.SDLInit.*
 import org.lwjgl.sdl.SDLTimer.SDL_GetTicks
-import org.lwjgl.sdl.SDLVideo.SDL_CreateWindow
-import org.lwjgl.sdl.SDLVideo.SDL_GL_CONTEXT_MAJOR_VERSION
-import org.lwjgl.sdl.SDLVideo.SDL_GL_CONTEXT_MINOR_VERSION
-import org.lwjgl.sdl.SDLVideo.SDL_GL_CONTEXT_PROFILE_CORE
-import org.lwjgl.sdl.SDLVideo.SDL_GL_CONTEXT_PROFILE_MASK
-import org.lwjgl.sdl.SDLVideo.SDL_GL_CreateContext
-import org.lwjgl.sdl.SDLVideo.SDL_GL_MakeCurrent
-import org.lwjgl.sdl.SDLVideo.SDL_GL_SetAttribute
-import org.lwjgl.sdl.SDLVideo.SDL_GL_SetSwapInterval
-import org.lwjgl.sdl.SDLVideo.SDL_GL_SwapWindow
-import org.lwjgl.sdl.SDLVideo.SDL_GetWindowDisplayScale
-import org.lwjgl.sdl.SDLVideo.SDL_SetWindowSize
-import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_HIGH_PIXEL_DENSITY
-import org.lwjgl.sdl.SDLVideo.SDL_WINDOW_OPENGL
+import org.lwjgl.sdl.SDLVideo.*
 import org.lwjgl.sdl.SDL_Event
 import org.lwjgl.stb.STBImage
 import org.lwjgl.stb.STBImage.stbi_set_flip_vertically_on_load
@@ -51,7 +34,6 @@ import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil
 import kotlin.math.ceil
 import kotlin.math.sin
-import kotlin.use
 
 fun main() {
     check(SDL_Init(SDL_INIT_VIDEO or SDL_INIT_AUDIO)) { "SDL_Init failed: ${SDL_GetError()}" }
@@ -75,7 +57,7 @@ fun main() {
     SDL_GL_SetSwapInterval(1) // vsync
 
     val gl = OpenGLContext()
-    val gpu = GPUResources(gl)
+    val gpu = RenderDevice(gl)
     val windowRenderTarget = WindowRenderTarget(1280, 720)
 
     val vao = gl.genVertexArrays()
