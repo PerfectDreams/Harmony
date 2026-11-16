@@ -12,6 +12,7 @@ class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget) {
     fun <T : ShaderProgram> withPipeline(pipeline: Pipeline<T>, block: PipelineScope<T>.() -> (Unit)) {
         val depthState = pipeline.depth
         val blendState = pipeline.blend
+        val cullState = pipeline.cull
 
         if (depthState != null) {
             if (renderTarget is Framebuffer) {
@@ -45,6 +46,13 @@ class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget) {
             )
         } else {
             gpu.gl.disable(GLConstants.GL_BLEND)
+        }
+
+        if (cullState != null) {
+            gpu.gl.enable(GLConstants.GL_CULL_FACE)
+            gpu.gl.cullFace(cullState.face.glValue)
+        } else {
+            gpu.gl.disable(GLConstants.GL_CULL_FACE)
         }
 
         val scope = PipelineScope(pipeline.shader)
