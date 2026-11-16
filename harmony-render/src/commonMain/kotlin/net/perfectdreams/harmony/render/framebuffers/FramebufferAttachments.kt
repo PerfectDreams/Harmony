@@ -17,4 +17,7 @@ class FramebufferAttachments(
     val color1Texture get() = (color1 as FramebufferAttachment.TextureAttachment).texture
     val color2Texture get() = (color2 as FramebufferAttachment.TextureAttachment).texture
     val color3Texture get() = (color3 as FramebufferAttachment.TextureAttachment).texture
+
+    val depthStencil get() = depthStencilAttachment
+    val depthStencilTexture get() = (depthStencil as FramebufferAttachment.TextureAttachment).texture
 }
