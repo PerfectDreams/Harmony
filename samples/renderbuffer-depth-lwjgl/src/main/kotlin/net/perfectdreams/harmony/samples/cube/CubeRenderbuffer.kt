@@ -16,6 +16,7 @@ import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachment
 import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachments
 import net.perfectdreams.harmony.render.pipelines.DepthState
 import net.perfectdreams.harmony.render.pipelines.Pipeline
+import net.perfectdreams.harmony.render.rendertarget.ClearOptions
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.render.textures.TextureFormat
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
@@ -287,8 +288,6 @@ fun main() {
         var running = true
 
         while (running) {
-            gl.clearColor(0.0f, 0.0f, 1.0f, 1.0f)
-
             val view = Matrix4f()
                 .translate(-cameraX, -cameraY, -cameraZ)
 
@@ -299,9 +298,7 @@ fun main() {
 
             gl.enable(GLConstants.GL_DEPTH_TEST)
 
-            gpu.onRenderTarget(framebuffer) {
-                gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
-
+            gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
                 withPipeline(Pipeline(shader, depth = DepthState(write = true))) {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)
@@ -340,9 +337,7 @@ fun main() {
                 copyStencil = false
             )
 
-            gpu.onRenderTarget(windowRenderTarget) {
-                gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
-
+            gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(uiProjection.get(FloatArray(16)))
 

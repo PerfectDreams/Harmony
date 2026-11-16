@@ -7,6 +7,8 @@ abstract class GLContext {
     abstract fun enable(target: Int)
     abstract fun disable(target: Int)
     abstract fun clearColor(red: Float, green: Float, blue: Float, alpha: Float)
+    abstract fun clearDepth(depth: Float)
+    abstract fun clearStencil(stencil: Int)
     abstract fun clear(mask: Int)
     abstract fun viewport(x: Int, y: Int, width: Int, height: Int)
     abstract fun scissor(x: Int, y: Int, width: Int, height: Int)
@@ -54,6 +56,7 @@ abstract class GLContext {
     abstract fun generateMipmap(target: Int)
     abstract fun depthFunc(func: Int)
     abstract fun depthMask(flag: Boolean)
+    abstract fun stencilMask(mask: Int)
 
     abstract fun genFramebuffers(): GLFramebuffer
     fun deleteFramebuffer(framebuffer: GLFramebuffer) = deleteFramebuffers(listOf(framebuffer))

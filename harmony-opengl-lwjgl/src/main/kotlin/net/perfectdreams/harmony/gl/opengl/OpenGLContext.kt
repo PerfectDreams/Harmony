@@ -15,10 +15,13 @@ import org.lwjgl.opengl.GL11.glBindTexture
 import org.lwjgl.opengl.GL11.glBlendFunc
 import org.lwjgl.opengl.GL11.glClear
 import org.lwjgl.opengl.GL11.glClearColor
+import org.lwjgl.opengl.GL11.glClearDepth
+import org.lwjgl.opengl.GL11.glClearStencil
 import org.lwjgl.opengl.GL11.glCullFace
 import org.lwjgl.opengl.GL11.glDeleteTextures
 import org.lwjgl.opengl.GL11.glDepthFunc
 import org.lwjgl.opengl.GL11.glDepthMask
+import org.lwjgl.opengl.GL11.glStencilMask
 import org.lwjgl.opengl.GL11.glDisable
 import org.lwjgl.opengl.GL11.glDrawArrays
 import org.lwjgl.opengl.GL11.glDrawElements
@@ -106,6 +109,9 @@ class OpenGLContext : GLContext() {
     override fun enable(target: Int) = glEnable(target)
     override fun disable(target: Int) = glDisable(target)
     override fun clearColor(red: Float, green: Float, blue: Float, alpha: Float) = glClearColor(red, green, blue, alpha)
+    override fun clearDepth(depth: Float) = glClearDepth(depth.toDouble())
+    override fun clearStencil(stencil: Int) = glClearStencil(stencil)
+
     override fun clear(mask: Int) = glClear(mask)
     override fun viewport(x: Int, y: Int, width: Int, height: Int) = glViewport(x, y, width, height)
     override fun scissor(x: Int, y: Int, width: Int, height: Int) = glScissor(x, y, width, height)
@@ -255,6 +261,7 @@ class OpenGLContext : GLContext() {
     override fun generateMipmap(target: Int) = glGenerateMipmap(target)
     override fun depthFunc(func: Int) = glDepthFunc(func)
     override fun depthMask(flag: Boolean) = glDepthMask(flag)
+    override fun stencilMask(mask: Int) = glStencilMask(mask)
 
     override fun genFramebuffers() = OpenGLFramebuffer(glGenFramebuffers())
     override fun deleteFramebuffers(values: List<GLFramebuffer>) = stackAllocateIntsAndCall(values.map { it.unwrap() }) { glDeleteFramebuffers(it) }

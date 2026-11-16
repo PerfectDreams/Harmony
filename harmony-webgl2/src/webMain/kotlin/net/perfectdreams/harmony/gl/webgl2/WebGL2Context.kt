@@ -41,6 +41,9 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun enable(target: Int) = context.enable(target.asGLenum())
     override fun disable(target: Int) = context.disable(target.asGLenum())
     override fun clearColor(red: Float, green: Float, blue: Float, alpha: Float) = context.clearColor(red, green, blue, alpha)
+    override fun clearDepth(depth: Float) = context.clearDepth(depth)
+    override fun clearStencil(stencil: Int) = context.clearStencil(stencil)
+
     override fun clear(mask: Int) = context.clear(mask.asGLbitfield())
     override fun viewport(x: Int, y: Int, width: Int, height: Int) = context.viewport(x, y, width, height)
     override fun scissor(x: Int, y: Int, width: Int, height: Int) = context.scissor(x, y, width, height)
@@ -199,6 +202,7 @@ class WebGL2Context(val context: WebGL2RenderingContext) : GLContext() {
     override fun generateMipmap(target: Int) = context.generateMipmap(target.asGLenum())
     override fun depthFunc(func: Int) = context.depthFunc(func.asGLenum())
     override fun depthMask(flag: Boolean) = context.depthMask(flag)
+    override fun stencilMask(mask: Int) = context.stencilMask(mask.asGLuint())
 
     override fun genFramebuffers() = WebGLFramebuffer(context.createFramebuffer())
     override fun deleteFramebuffers(values: List<GLFramebuffer>) {

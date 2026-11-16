@@ -15,6 +15,7 @@ import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
 import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.pipelines.Pipeline
+import net.perfectdreams.harmony.render.rendertarget.ClearOptions
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f
@@ -182,10 +183,7 @@ fun main() {
                     running = false
             }
 
-            gpu.onRenderTarget(windowRenderTarget) {
-                gl.clearColor(0.0f, 0.0f, 1.0f, 1.0f)
-                gl.clear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-
+            gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
                 withPipeline(Pipeline(uiShader)) {
                     gl.bindBuffer(GL_ARRAY_BUFFER, vbo2)
                     var idx = 0

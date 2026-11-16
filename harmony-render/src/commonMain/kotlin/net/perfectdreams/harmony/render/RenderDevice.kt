@@ -14,6 +14,7 @@ import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachments
 import net.perfectdreams.harmony.render.framebuffers.withFramebuffer
 import net.perfectdreams.harmony.render.pipelines.CompareFunc
 import net.perfectdreams.harmony.render.renderbuffers.Renderbuffer
+import net.perfectdreams.harmony.render.rendertarget.ClearOptions
 import net.perfectdreams.harmony.render.rendertarget.RenderTarget
 import net.perfectdreams.harmony.render.rendertarget.RenderTargetScope
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
@@ -361,14 +362,51 @@ class RenderDevice(val gl: GLContext) {
     }
 
     // RenderTarget related things are things that affect the ENTIRE RenderTarget (like clear)
-    fun onRenderTarget(target: RenderTarget, block: RenderTargetScope.() -> (Unit)) {
+    fun onRenderTarget(
+        target: RenderTarget,
+        clear: ClearOptions,
+        block: RenderTargetScope.() -> (Unit)
+    ) {
         val scope = RenderTargetScope(this, target)
 
+        val innerBlock = {
+            val color = clear.color
+            val depth = clear.depth
+            val stencil = clear.stencil
+
+            var mask = 0
+            if (color != null) {
+                gl.clearColor(color.red, color.green, color.blue, color.alpha)
+                mask = mask or GLConstants.GL_COLOR_BUFFER_BIT
+            }
+
+            if (depth != null) {
+                // Yes, this is needed if we are clearing the buffer because glClear respects this!
+                gl.depthMask(true)
+                gl.clearDepth(depth)
+                mask = mask or GLConstants.GL_DEPTH_BUFFER_BIT
+            }
+
+            if (stencil != null) {
+                // Yes, this is needed if we are clearing the buffer because glClear respects this!
+                gl.stencilMask(0xFF)
+                gl.clearStencil(stencil)
+                mask = mask or GLConstants.GL_STENCIL_BUFFER_BIT
+            }
+
+            if (mask != 0)
+                gl.clear(mask)
+        }
+
         when (target) {
-            is Framebuffer -> return target.withFramebuffer { block(scope) }
+            is Framebuffer -> return target.withFramebuffer {
+                innerBlock()
+                block(scope)
+            }
             is WindowRenderTarget -> {
                 gl.bindFramebuffer(GL_FRAMEBUFFER, null)
                 gl.viewport(0, 0, target.width, target.height)
+                innerBlock()
                 block(scope)
             }
             else -> error("I don't know how to render to $target!")

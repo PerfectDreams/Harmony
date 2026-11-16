@@ -15,6 +15,7 @@ import net.perfectdreams.harmony.render.batcher.withSpritePipeline
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.render.pipelines.Pipeline
 import net.perfectdreams.harmony.render.pipelines.DepthState
+import net.perfectdreams.harmony.render.rendertarget.ClearOptions
 import net.perfectdreams.harmony.render.textures.TextureFormat
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f
@@ -343,14 +344,14 @@ fun main() {
 
     SDL_HideCursor()
 
+    val clearColor = ClearOptions.Color(0.0f, 0.0f, 1.0f, 0.0f)
+
     MemoryStack.stackPush().use { stack ->
         val event = SDL_Event.malloc(stack)
         var running = true
 
         while (running) {
             val uiProjection = Matrix4f().ortho(0f, windowRenderTarget.width.toFloat(), windowRenderTarget.height.toFloat(), 0f, -1f, 1f)
-
-            gl.clearColor(0.0f, 0.0f, 1.0f, 1.0f)
 
             val view = Matrix4f()
                 .rotateY(Math.toRadians(yaw.toDouble()).toFloat())
@@ -412,7 +413,7 @@ fun main() {
                 cameraY = 0f
             }
 
-            gpu.onRenderTarget(framebuffer) {
+            gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = clearColor)) {
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(Matrix4f().ortho(0f, 64f, 64f, 0f, -1f, 1f).get(FloatArray(16)))
 
@@ -436,9 +437,7 @@ fun main() {
                 }
             }
 
-            gpu.onRenderTarget(windowRenderTarget) {
-                gl.clear(GL_COLOR_BUFFER_BIT or GLConstants.GL_DEPTH_BUFFER_BIT)
-
+            gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = clearColor, depth = 1f)) {
                 withPipeline(Pipeline(shader, depth = DepthState(write = true))) {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)
