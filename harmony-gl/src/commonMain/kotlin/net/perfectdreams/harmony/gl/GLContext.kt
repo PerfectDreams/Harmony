@@ -37,6 +37,7 @@ abstract class GLContext {
     abstract fun blendFunc(src: Int, dst: Int)
     abstract fun blendFuncSeparate(srcRGB: Int, dstRGB: Int, srcAlpha: Int, dstAlpha: Int)
     abstract fun blendEquation(mode: Int)
+    abstract fun blendEquationSeparate(modeRGB: Int, modeAlpha: Int)
     abstract fun cullFace(mode: Int)
     abstract fun polygonOffset(factor: Float, units: Float)
     abstract fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long)

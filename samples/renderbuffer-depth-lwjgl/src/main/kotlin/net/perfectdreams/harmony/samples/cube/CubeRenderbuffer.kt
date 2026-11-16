@@ -13,6 +13,7 @@ import net.perfectdreams.harmony.render.batcher.SpriteBatcher
 import net.perfectdreams.harmony.render.batcher.withSpritePipeline
 import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachment
 import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachments
+import net.perfectdreams.harmony.render.pipelines.BlendState
 import net.perfectdreams.harmony.render.pipelines.DepthState
 import net.perfectdreams.harmony.render.pipelines.Pipeline
 import net.perfectdreams.harmony.render.rendertarget.ClearOptions
@@ -311,8 +312,8 @@ fun main() {
 
             gl.enable(GLConstants.GL_DEPTH_TEST)
 
-            gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
-                withPipeline(Pipeline(shader, depth = DepthState(write = true))) {
+            gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
+                withPipeline(Pipeline(shader, depth = DepthState(write = true), blend = BlendState.AlphaBlending)) {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)
                         .rotateY(SDL_GetTicks() / 1000f)
@@ -366,9 +367,6 @@ fun main() {
             )
 
             gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
-                gl.enable(GLConstants.GL_BLEND)
-                gl.blendFunc(GLConstants.GL_SRC_ALPHA, GLConstants.GL_ONE_MINUS_SRC_ALPHA)
-
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(uiProjection.get(FloatArray(16)))
 
@@ -399,6 +397,18 @@ fun main() {
                             1.0f,
                             1.0f,
                             0.25f
+                        )
+
+                        drawQuad(
+                            0f,
+                            180f,
+                            320f,
+                            180f,
+                            0f,
+                            1f,
+                            1f,
+                            0f,
+                            targetFramebuffer2.attachments.color0Texture
                         )
 
                         drawQuad(

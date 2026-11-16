@@ -48,6 +48,7 @@ import org.lwjgl.opengl.GL15.glBufferSubData
 import org.lwjgl.opengl.GL15.glDeleteBuffers
 import org.lwjgl.opengl.GL15.glGenBuffers
 import org.lwjgl.opengl.GL20.glAttachShader
+import org.lwjgl.opengl.GL20.glBlendEquationSeparate
 import org.lwjgl.opengl.GL20.glCompileShader
 import org.lwjgl.opengl.GL20.glCreateProgram
 import org.lwjgl.opengl.GL20.glCreateShader
@@ -144,6 +145,7 @@ class OpenGLContext : GLContext() {
     override fun blendFunc(src: Int, dst: Int) = glBlendFunc(src, dst)
     override fun blendFuncSeparate(srcRGB: Int, dstRGB: Int, srcAlpha: Int, dstAlpha: Int) = glBlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha)
     override fun blendEquation(mode: Int) = glBlendEquation(mode)
+    override fun blendEquationSeparate(modeRGB: Int, modeAlpha: Int) = glBlendEquationSeparate(modeRGB, modeAlpha)
     override fun cullFace(mode: Int) = glCullFace(mode)
     override fun polygonOffset(factor: Float, units: Float) = glPolygonOffset(factor, units)
     override fun vertexAttribPointer(index: Int, size: Int, type: Int, normalized: Boolean, stride: Int, offset: Long) = glVertexAttribPointer(index, size, type, normalized, stride, offset)

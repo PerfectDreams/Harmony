@@ -6,6 +6,7 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_TEXTURE0
 import net.perfectdreams.harmony.gl.GLConstants.GL_TEXTURE_2D
 import net.perfectdreams.harmony.gl.GLConstants.GL_TRIANGLES
 import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.render.pipelines.BlendState
 import net.perfectdreams.harmony.render.textures.Texture
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import net.perfectdreams.harmony.render.pipelines.Pipeline
@@ -40,7 +41,7 @@ class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
         vertexAttributes.apply(gl)
     }
 
-    fun <T : SpriteShader> createSpritePipeline(shader: T) = Pipeline(shader, null)
+    fun <T : SpriteShader> createSpritePipeline(shader: T) = Pipeline(shader, null, BlendState.AlphaBlending)
 
     fun <T : SpriteShader> drawBatch(pipelineScope: PipelineScope<T>, block: SpriteBatcherScope.() -> Unit) = drawBatch(pipelineScope.shader, block)
 

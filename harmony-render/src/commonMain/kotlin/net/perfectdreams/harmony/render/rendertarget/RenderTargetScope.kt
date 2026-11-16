@@ -11,6 +11,7 @@ import net.perfectdreams.harmony.render.shaders.withProgram
 class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget) {
     fun <T : ShaderProgram> withPipeline(pipeline: Pipeline<T>, block: PipelineScope<T>.() -> (Unit)) {
         val depthState = pipeline.depth
+        val blendState = pipeline.blend
 
         if (depthState != null) {
             if (renderTarget is Framebuffer) {
@@ -28,6 +29,22 @@ class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget) {
             gpu.gl.depthFunc(GLConstants.GL_LESS)
             gpu.gl.depthMask(true)
             gpu.gl.disable(GLConstants.GL_DEPTH_TEST)
+        }
+
+        if (blendState != null) {
+            gpu.gl.enable(GLConstants.GL_BLEND)
+            gpu.gl.blendFuncSeparate(
+                blendState.srcColor,
+                blendState.dstColor,
+                blendState.srcAlpha,
+                blendState.dstAlpha
+            )
+            gpu.gl.blendEquationSeparate(
+                blendState.colorEquation,
+                blendState.alphaEquation
+            )
+        } else {
+            gpu.gl.disable(GLConstants.GL_BLEND)
         }
 
         val scope = PipelineScope(pipeline.shader)
