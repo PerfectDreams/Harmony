@@ -256,12 +256,15 @@ class RenderDevice(val gl: GLContext) {
             }
         }
 
+        val drawBuffers: IntArray
+        val readBuffer: Int
+
         if (attachments.colorAttachments.isEmpty()) {
             // Framebuffers draw to and read from COLOR_ATTACHMENT0 by default, without a color attachment desktop OpenGL (pre-4.1) considers the framebuffer incomplete
             // OpenGL (Medium): [Other] FBO incomplete: missing drawbuffer [0]
             // Test it by using "MESA_GL_VERSION_OVERRIDE=3.3 MESA_EXTENSION_OVERRIDE="-GL_ARB_ES2_compatibility""
-            gl.drawBuffers(intArrayOf(GLConstants.GL_NONE))
-            gl.readBuffer(GLConstants.GL_NONE)
+            drawBuffers = intArrayOf(GLConstants.GL_NONE)
+            readBuffer = GLConstants.GL_NONE
         } else {
             val max = attachments.colorAttachments.keys.max()
 
@@ -275,9 +278,12 @@ class RenderDevice(val gl: GLContext) {
                     GLConstants.GL_NONE
             }
 
-            gl.drawBuffers(array)
-            gl.readBuffer(GLConstants.GL_COLOR_ATTACHMENT0 + attachments.colorAttachments.keys.min())
+            drawBuffers = array
+            readBuffer = GLConstants.GL_COLOR_ATTACHMENT0 + attachments.colorAttachments.keys.min()
         }
+
+        gl.drawBuffers(drawBuffers)
+        gl.readBuffer(readBuffer)
 
         if (attachments.depthStencilAttachment != null) {
             updateTargetDimensions(attachments.depthStencilAttachment.width, attachments.depthStencilAttachment.height, attachments.depthStencilAttachment.samples)
@@ -291,7 +297,7 @@ class RenderDevice(val gl: GLContext) {
         check(status == GLConstants.GL_FRAMEBUFFER_COMPLETE) { "Framebuffer is incomplete! Status: 0x${status.toString(16)}" }
         gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, null)
 
-        return Framebuffer(gl, framebufferId, attachments, targetWidth, targetHeight, targetSamples != 1)
+        return Framebuffer(gl, framebufferId, attachments, targetWidth, targetHeight, readBuffer, drawBuffers, targetSamples != 1)
     }
 
     /**

@@ -4,7 +4,6 @@ import net.perfectdreams.harmony.gl.ByteArrayTextureSource
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLConstants.GL_ARRAY_BUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_CLAMP_TO_EDGE
-import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_NEAREST
 import net.perfectdreams.harmony.gl.GLConstants.GL_STATIC_DRAW
 import net.perfectdreams.harmony.gl.opengl.OpenGLContext
@@ -95,7 +94,8 @@ fun main() {
             in vec2 vTexCoord;
             in vec3 vNormal;
             in vec3 vWorldPosition;
-            out vec4 FragColor;
+            layout(location = 0) out vec4 FragColor;
+            layout(location = 1) out vec4 RColor;
             
             void main() {
                 vec3 normal = normalize(vNormal);
@@ -104,6 +104,7 @@ fun main() {
                         
                 vec4 texColor = texture(uTexture, vTexCoord);
                 FragColor = vec4(texColor.r * (facing * 0.75), texColor.g * (facing * 0.75), texColor.b * facing, texColor.a);
+                RColor = vec4(vNormal, 1.0);
             }
         """.trimIndent()
 
@@ -247,11 +248,23 @@ fun main() {
 
     val framebuffer = gpu.createFramebuffer(
         FramebufferAttachments(
-            mapOf(0 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4))),
+            mapOf(
+                0 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
+                1 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4))
+            ),
             depthStencilAttachment = FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.DEPTH24, 4))
         )
     )
     val targetFramebuffer = gpu.createFramebuffer(
+        160,
+        90,
+        null,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_CLAMP_TO_EDGE,
+        GLConstants.GL_NEAREST,
+        GLConstants.GL_NEAREST
+    )
+    val targetFramebuffer2 = gpu.createFramebuffer(
         160,
         90,
         null,
@@ -318,7 +331,9 @@ fun main() {
                 GL_NEAREST,
                 copyColor = false,
                 copyDepth = true,
-                copyStencil = false
+                copyStencil = false,
+                overrideReadBuffer = null,
+                overrideDrawBuffers = null,
             )
 
             framebuffer.blitRegionTo(
@@ -334,10 +349,26 @@ fun main() {
                 90,
                 copyColor = true,
                 copyDepth = false,
-                copyStencil = false
+                copyStencil = false,
+                overrideReadBuffer = null,
+                overrideDrawBuffers = null,
+            )
+
+            // Override so we can get the normal from the fragment shader
+            framebuffer.blitTo(
+                targetFramebuffer2,
+                GL_NEAREST,
+                copyColor = true,
+                copyDepth = false,
+                copyStencil = false,
+                overrideReadBuffer = GLConstants.GL_COLOR_ATTACHMENT1,
+                overrideDrawBuffers = null,
             )
 
             gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
+                gl.enable(GLConstants.GL_BLEND)
+                gl.blendFunc(GLConstants.GL_SRC_ALPHA, GLConstants.GL_ONE_MINUS_SRC_ALPHA)
+
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(uiProjection.get(FloatArray(16)))
 
@@ -352,6 +383,22 @@ fun main() {
                             1f,
                             0f,
                             targetFramebuffer.attachments.color0Texture
+                        )
+
+                        drawQuad(
+                            0f,
+                            0f,
+                            1280f,
+                            720f,
+                            0f,
+                            1f,
+                            1f,
+                            0f,
+                            targetFramebuffer2.attachments.color0Texture,
+                            1.0f,
+                            1.0f,
+                            1.0f,
+                            0.25f
                         )
 
                         drawQuad(

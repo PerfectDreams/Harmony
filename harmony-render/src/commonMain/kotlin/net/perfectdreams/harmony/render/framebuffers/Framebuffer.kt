@@ -17,6 +17,8 @@ class Framebuffer(
     val attachments: FramebufferAttachments,
     override val width: Int,
     override val height: Int,
+    val initialReadBuffer: Int,
+    val initialDrawBuffers: IntArray,
     val isMultisampled: Boolean
 ) : AutoCloseable, RenderTarget() {
     fun blitTo(
@@ -24,7 +26,9 @@ class Framebuffer(
         filter: Int,
         copyColor: Boolean,
         copyDepth: Boolean,
-        copyStencil: Boolean
+        copyStencil: Boolean,
+        overrideReadBuffer: Int?,
+        overrideDrawBuffers: IntArray?
     ) {
         blitRegionTo(
             target,
@@ -39,7 +43,9 @@ class Framebuffer(
             target.height,
             copyColor,
             copyDepth,
-            copyStencil
+            copyStencil,
+            overrideReadBuffer,
+            overrideDrawBuffers
         )
     }
 
@@ -57,9 +63,13 @@ class Framebuffer(
         copyColor: Boolean,
         copyDepth: Boolean,
         copyStencil: Boolean,
+        overrideReadBuffer: Int?,
+        overrideDrawBuffers: IntArray?
     ) {
         require(copyColor || copyDepth || copyStencil) { "A blit needs to copy at least one of color, depth or stencil!" }
         require(!isMultisampled || (sourceWidth == targetWidth && sourceHeight == targetHeight)) { "Cannot scale while copying from a multisampled framebuffer, the source region is ${sourceWidth}x${sourceHeight} but the target region is ${targetWidth}x${targetHeight}!" }
+        require(overrideDrawBuffers == null || target is Framebuffer) { "You can only set overrideDrawBuffers if the target is a framebuffer!" }
+
         if (copyDepth || copyStencil) {
             val sourceDepthStencilFormat = requireNotNull(this.attachments.depthStencilAttachment) { "Trying to copy depth and/or stencil, but the source framebuffer does not have a depth buffer!" }
             if (target is Framebuffer) {
@@ -75,6 +85,11 @@ class Framebuffer(
             else -> error("Unsupported target $target!")
         }
         gl.bindFramebuffer(GLConstants.GL_DRAW_FRAMEBUFFER, targetFB)
+
+        if (overrideReadBuffer != null)
+            gl.readBuffer(overrideReadBuffer)
+        if (overrideDrawBuffers != null)
+            gl.drawBuffers(overrideDrawBuffers)
 
         var mask = 0
         if (copyColor) mask = mask or GL_COLOR_BUFFER_BIT
@@ -93,6 +108,10 @@ class Framebuffer(
             mask,
             filter
         )
+
+        gl.readBuffer(initialReadBuffer)
+        if (target is Framebuffer)
+            gl.drawBuffers(target.initialDrawBuffers)
 
         gl.bindFramebuffer(GLConstants.GL_READ_FRAMEBUFFER, null)
         gl.bindFramebuffer(GLConstants.GL_DRAW_FRAMEBUFFER, null)
