@@ -14,9 +14,9 @@ import net.perfectdreams.harmony.render.framebuffers.FramebufferAttachments
 import net.perfectdreams.harmony.render.framebuffers.withFramebuffer
 import net.perfectdreams.harmony.render.pipelines.CompareFunc
 import net.perfectdreams.harmony.render.renderbuffers.Renderbuffer
-import net.perfectdreams.harmony.render.rendertarget.ClearOptions
+import net.perfectdreams.harmony.render.renderpass.ClearOptions
 import net.perfectdreams.harmony.render.rendertarget.RenderTarget
-import net.perfectdreams.harmony.render.rendertarget.RenderTargetScope
+import net.perfectdreams.harmony.render.renderpass.RenderPassScope
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.render.shaders.ShaderProgram
 import net.perfectdreams.harmony.render.textures.Texture
@@ -28,7 +28,7 @@ import net.perfectdreams.harmony.render.viewports.Viewport
 
 class RenderDevice(val gl: GLContext) {
     val white1x1Texture = create1x1Texture(0xFF, 0xFF, 0xFF, 0xFF)
-    var isInsideARenderTarget = false
+    var activeRenderPassScope: RenderPassScope? = null
         private set
 
     fun create1x1Texture(red: Int, green: Int, blue: Int, alpha: Int) = createTexture(
@@ -74,6 +74,8 @@ class RenderDevice(val gl: GLContext) {
         // magnify
         magFilter: Int
     ): Texture {
+        check(activeRenderPassScope == null) { "You cannot create a texture inside a render pass!" }
+
         // --- OpenGL Texture Creation ---
 
         // 1. Generate and bind a new texture ID
@@ -113,6 +115,7 @@ class RenderDevice(val gl: GLContext) {
         format: TextureFormat,
         samples: Int
     ): Renderbuffer {
+        check(activeRenderPassScope == null) { "You cannot create a renderbuffer inside a render pass!" }
         require(samples >= 1) { "Renderbuffer samples must be 1 or higher, but it was $samples!" }
         val renderbufferId = gl.genRenderbuffers()
         gl.bindRenderbuffer(GL_RENDERBUFFER, renderbufferId)
@@ -156,6 +159,7 @@ class RenderDevice(val gl: GLContext) {
         // magnify
         magFilter: Int
     ): TextureArray {
+        check(activeRenderPassScope == null) { "You cannot create a texture array inside a render pass!" }
         val textureArray = gl.genTextures()
         gl.bindTexture(GLConstants.GL_TEXTURE_2D_ARRAY, textureArray)
         gl.texImage3D(GLConstants.GL_TEXTURE_2D_ARRAY, 0, GLConstants.GL_RGBA8, layerWidth, layerHeight, layerCount, 0, GLConstants.GL_RGBA, GLConstants.GL_UNSIGNED_BYTE)
@@ -232,6 +236,7 @@ class RenderDevice(val gl: GLContext) {
     }
 
     fun createFramebuffer(attachments: FramebufferAttachments): Framebuffer {
+        check(activeRenderPassScope == null) { "You cannot create a framebuffer inside a render pass!" }
         val framebufferId = gl.genFramebuffers()
 
         gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, framebufferId)
@@ -320,15 +325,16 @@ class RenderDevice(val gl: GLContext) {
     /**
      * Loads the vertex shader and fragment shader from the [vertexShaderCode] and [fragmentShaderCode]
      */
-    fun <T : ShaderProgram> createShader(vertexShaderCode: String, fragmentShaderCode: String, createGameShader: (GLContext, GLProgram) -> (T)): T {
+    fun <T : ShaderProgram> createShader(vertexShaderCode: String, fragmentShaderCode: String, createGameShader: (RenderDevice, GLProgram) -> (T)): T {
         val programId = createShader(vertexShaderCode, fragmentShaderCode)
-        return createGameShader.invoke(gl, programId)
+        return createGameShader.invoke(this, programId)
     }
 
     /**
      * Loads the vertex shader and fragment shader
      */
     fun createShader(vertexShaderCode: String, fragmentShaderCode: String): GLProgram {
+        check(activeRenderPassScope == null) { "You cannot create a program inside a render pass!" }
         val vertexShaderId = gl.createShader(GLConstants.GL_VERTEX_SHADER)
         val fragmentShaderId = gl.createShader(GLConstants.GL_FRAGMENT_SHADER)
 
@@ -388,15 +394,15 @@ class RenderDevice(val gl: GLContext) {
     fun renderPass(
         target: RenderTarget,
         clear: ClearOptions,
-        block: RenderTargetScope.() -> (Unit)
+        block: RenderPassScope.() -> (Unit)
     ) {
-        require(!this.isInsideARenderTarget) { "You cannot nest renderPass calls!" }
+        require(activeRenderPassScope == null) { "You cannot nest renderPass calls!" }
         try {
-            this.isInsideARenderTarget = true
-
             gl.disable(GLConstants.GL_SCISSOR_TEST)
 
-            val scope = RenderTargetScope(this, target, Viewport(0, 0, target.width, target.height))
+            val scope = RenderPassScope(this, target, Viewport(0, 0, target.width, target.height))
+
+            this.activeRenderPassScope = scope
 
             val innerBlock = {
                 val color = clear.color
@@ -443,7 +449,8 @@ class RenderDevice(val gl: GLContext) {
                 else -> error("I don't know how to render to $target!")
             }
         } finally {
-            this.isInsideARenderTarget = false
+            this.activeRenderPassScope = null
+            gl.useProgram(null)
         }
     }
 }

@@ -13,7 +13,7 @@ import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
 import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.pipelines.Pipeline
-import net.perfectdreams.harmony.render.rendertarget.ClearOptions
+import net.perfectdreams.harmony.render.renderpass.ClearOptions
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f

@@ -1,4 +1,4 @@
-package net.perfectdreams.harmony.render.rendertarget
+package net.perfectdreams.harmony.render.renderpass
 
 class ClearOptions(
     val color: Color? = null,

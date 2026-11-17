@@ -1,16 +1,16 @@
 package net.perfectdreams.harmony.render.shaders
 
 import net.perfectdreams.harmony.gl.GLConstants
-import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLProgram
 import net.perfectdreams.harmony.gl.GLTexture
 import net.perfectdreams.harmony.gl.GLUniformLocation
+import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.textures.Texture
 import net.perfectdreams.harmony.render.textures.TextureArray
 
-abstract class ShaderProgram(val gl: GLContext, val programId: GLProgram) {
+abstract class ShaderProgram(val device: RenderDevice, val programId: GLProgram) {
     private fun getUniformLocation(name: String): GLUniformLocation? {
-        val location = gl.getUniformLocation(programId, name)
+        val location = device.gl.getUniformLocation(programId, name)
         if (location == null) {
             println("Program $programId does not have uniform \"$name\"!")
             return null
@@ -39,47 +39,65 @@ abstract class ShaderProgram(val gl: GLContext, val programId: GLProgram) {
 
             return location
         }
+
+        fun checkIfShaderIsActive() {
+            check(shader == shader.device.activeRenderPassScope?.activeShaderProgram) { "Trying to change uniform $name of shader ${shader.programId}, but the current active shader is ${shader.device.activeRenderPassScope?.activeShaderProgram}!" }
+        }
+
+        fun increaseRenderPassState() = shader.device.activeRenderPassScope?.stateVersion++
     }
 
     class Uniform1f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniform1f(location, x)
+            shader.device.gl.uniform1f(location, x)
         }
     }
 
     class Uniform2f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float, y: Float) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniform2f(location, x, y)
+            shader.device.gl.uniform2f(location, x, y)
         }
     }
 
     class Uniform3f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float, y: Float, z: Float) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniform3f(location, x, y, z)
+            shader.device.gl.uniform3f(location, x, y, z)
         }
     }
 
     class Uniform4f(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Float, y: Float, z: Float, w: Float) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniform4f(location, x, y, z, w)
+            shader.device.gl.uniform4f(location, x, y, z, w)
         }
     }
 
     class UniformMatrix4fv(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(value: FloatArray) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniformMatrix4fv(location, false, value)
+            shader.device.gl.uniformMatrix4fv(location, false, value)
         }
     }
 
     class Uniform1i(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Int) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniform1i(location, x)
+            shader.device.gl.uniform1i(location, x)
         }
     }
 
@@ -87,15 +105,17 @@ abstract class ShaderProgram(val gl: GLContext, val programId: GLProgram) {
         fun set(slot: Int, texture: Texture) = set(slot, texture.textureId)
 
         fun set(slot: Int, textureId: GLTexture) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
 
             // Hacky!!!
             val pos = slot + GLConstants.GL_TEXTURE0
 
-            shader.gl.activeTexture(pos)
-            shader.gl.bindTexture(GLConstants.GL_TEXTURE_2D, textureId)
+            shader.device.gl.activeTexture(pos)
+            shader.device.gl.bindTexture(GLConstants.GL_TEXTURE_2D, textureId)
 
-            shader.gl.uniform1i(location, slot)
+            shader.device.gl.uniform1i(location, slot)
         }
     }
 
@@ -103,27 +123,26 @@ abstract class ShaderProgram(val gl: GLContext, val programId: GLProgram) {
         fun set(slot: Int, texture: TextureArray) = set(slot, texture.textureId)
 
         fun set(slot: Int, textureId: GLTexture) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
 
             // Hacky!!!
             val pos = slot + GLConstants.GL_TEXTURE0
 
-            shader.gl.activeTexture(pos)
-            shader.gl.bindTexture(GLConstants.GL_TEXTURE_2D_ARRAY, textureId)
+            shader.device.gl.activeTexture(pos)
+            shader.device.gl.bindTexture(GLConstants.GL_TEXTURE_2D_ARRAY, textureId)
 
-            shader.gl.uniform1i(location, slot)
+            shader.device.gl.uniform1i(location, slot)
         }
     }
 
     class Uniform1Bool(shader: ShaderProgram, location: GLUniformLocation?, name: String) : Uniform(shader, location, name) {
         fun set(x: Boolean) {
+            checkIfShaderIsActive()
+            increaseRenderPassState()
             val location = isUniformLocationInvalidAndLog() ?: return
-            shader.gl.uniform1i(location, if (x) 1 else 0)
+            shader.device.gl.uniform1i(location, if (x) 1 else 0)
         }
     }
-}
-
-inline fun <T : ShaderProgram> T.withProgram(block: T.() -> (Unit)) {
-    gl.useProgram(this.programId)
-    block.invoke(this)
 }

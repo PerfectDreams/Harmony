@@ -5,12 +5,10 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_DEPTH_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_FRAMEBUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_STENCIL_BUFFER_BIT
-import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLFramebuffer
 import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.rendertarget.RenderTarget
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
-import kotlin.collections.iterator
 
 class Framebuffer(
     val device: RenderDevice,
@@ -70,7 +68,7 @@ class Framebuffer(
         overrideReadBuffer: Int?,
         overrideDrawBuffers: IntArray?
     ) {
-        require(!device.isInsideARenderTarget) { "You cannot blit framebuffers while inside a render target!" }
+        require(this.device.activeRenderPassScope == null) { "You cannot blit framebuffers while inside a render target!" }
         require(copyColor || copyDepth || copyStencil) { "A blit needs to copy at least one of color, depth or stencil!" }
         require(!isMultisampled || (sourceWidth == targetWidth && sourceHeight == targetHeight)) { "Cannot scale while copying from a multisampled framebuffer, the source region is ${sourceWidth}x${sourceHeight} but the target region is ${targetWidth}x${targetHeight}!" }
         require(overrideDrawBuffers == null || target is Framebuffer) { "You can only set overrideDrawBuffers if the target is a framebuffer!" }

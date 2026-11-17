@@ -5,18 +5,19 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_DYNAMIC_DRAW
 import net.perfectdreams.harmony.gl.GLConstants.GL_TEXTURE0
 import net.perfectdreams.harmony.gl.GLConstants.GL_TEXTURE_2D
 import net.perfectdreams.harmony.gl.GLConstants.GL_TRIANGLES
-import net.perfectdreams.harmony.gl.GLContext
+import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.pipelines.BlendState
+import net.perfectdreams.harmony.render.pipelines.Pipeline
+import net.perfectdreams.harmony.render.renderpass.RenderPassScope
+import net.perfectdreams.harmony.render.scissors.ScissorRect
+import net.perfectdreams.harmony.render.shaders.ShaderProgram
 import net.perfectdreams.harmony.render.textures.Texture
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
-import net.perfectdreams.harmony.render.pipelines.Pipeline
-import net.perfectdreams.harmony.render.pipelines.PipelineScope
-import net.perfectdreams.harmony.render.rendertarget.RenderTargetScope
 
 /**
  * A OpenGL sprite batcher, by combining all drawn sprites into a single draw call, we can draw everything at once, reducing draw calls
  */
-class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
+class SpriteBatcher(val device: RenderDevice, spritesPerBatch: Int = 1024) {
     companion object {
         private const val VERTICES_PER_SPRITE = 6
 
@@ -27,28 +28,28 @@ class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
         }
     }
 
-    private val vao = gl.genVertexArrays()
-    private val vbo = gl.genBuffers()
+    private val vao = device.gl.genVertexArrays()
+    private val vbo = device.gl.genBuffers()
     private val batch = FloatArray(spritesPerBatch * VERTICES_PER_SPRITE * vertexAttributes.totalSize)
     private var currentIndex = 0
     private var activeBatchTexture: Texture? = null
+    private var renderPassScope: RenderPassScope? = null
+    private var stateVersion = -1
 
     init {
-        gl.bindVertexArray(vao)
-        gl.bindBuffer(GL_ARRAY_BUFFER, vbo)
-        gl.bufferData(GL_ARRAY_BUFFER, batch, GL_DYNAMIC_DRAW)
+        device.gl.bindVertexArray(vao)
+        device.gl.bindBuffer(GL_ARRAY_BUFFER, vbo)
+        device.gl.bufferData(GL_ARRAY_BUFFER, batch, GL_DYNAMIC_DRAW)
 
-        vertexAttributes.apply(gl)
+        vertexAttributes.apply(device.gl)
     }
 
     fun <T : SpriteShader> createSpritePipeline(shader: T) = Pipeline(shader, null, BlendState.AlphaBlending)
 
-    fun <T : SpriteShader> drawBatch(pipelineScope: PipelineScope<T>, block: SpriteBatcherScope.() -> Unit) = drawBatch(pipelineScope.shader, block)
-
-    fun drawBatch(shader: SpriteShader, block: SpriteBatcherScope.() -> Unit) {
-        val scope = createDrawingScope(shader)
+    fun drawBatch(block: SpriteBatcherScope.() -> Unit) {
+        val scope = createDrawingScope()
         block(scope)
-        flush(shader)
+        flush()
         scope.disposed = true
     }
 
@@ -57,40 +58,46 @@ class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
      *
      * Useful when drawing calls can't happen inside a [drawBatch] in a natural manner
      */
-    fun createDrawingScope(shader: SpriteShader) = SpriteBatcherScope(this, shader)
+    fun createDrawingScope() = SpriteBatcherScope(this)
 
-    private fun setActiveTexture(shader: SpriteShader, texture: Texture) {
+    private fun setActiveTexture(texture: Texture) {
         if (this.activeBatchTexture != texture)
-            flush(shader)
+            flush()
         this.activeBatchTexture = texture
     }
 
-    private fun flushIfNeeded(shader: SpriteShader, required: Int) {
+    private fun flushIfNeeded(required: Int) {
         if ((this.currentIndex + required) > this.batch.size)
-            flush(shader)
+            flush()
     }
 
-    fun flush(shader: SpriteShader) {
+    fun flush() {
+        val shader = checkNotNull(device.activeRenderPassScope?.activeShaderProgram as? SpriteShader) { "There isn't a SpriteShader bound!" }
+
         val activeTexture = this.activeBatchTexture ?: return
         if (this.currentIndex == 0)
             return
 
-        gl.activeTexture(GL_TEXTURE0)
-        gl.bindTexture(GL_TEXTURE_2D, activeTexture.textureId)
+        check(device.activeRenderPassScope == renderPassScope)
+        check(device.activeRenderPassScope?.stateVersion == stateVersion) { "Invalid State Version! Stored version is $stateVersion but the active render pass scope version is ${device.activeRenderPassScope?.stateVersion}! Did you forget to flush?" }
 
-        gl.bindBuffer(GL_ARRAY_BUFFER, this.vbo)
-        gl.bufferSubData(GL_ARRAY_BUFFER, 0, this.batch)
+        device.gl.activeTexture(GL_TEXTURE0)
+        device.gl.bindTexture(GL_TEXTURE_2D, activeTexture.textureId)
+
+        device.gl.bindBuffer(GL_ARRAY_BUFFER, this.vbo)
+        device.gl.bufferSubData(GL_ARRAY_BUFFER, 0, this.batch)
 
         shader.uTexture.set(0, activeTexture)
 
-        gl.bindVertexArray(vao)
-        gl.drawArrays(GL_TRIANGLES, 0, currentIndex / vertexAttributes.totalSize)
+        device.gl.bindVertexArray(vao)
+        device.gl.drawArrays(GL_TRIANGLES, 0, currentIndex / vertexAttributes.totalSize)
 
         this.currentIndex = 0
         // We don't need to clear the current batch even though it has TRASH in it
     }
 
-    class SpriteBatcherScope(val batcher: SpriteBatcher, val shader: SpriteShader) {
+    class SpriteBatcherScope(val batcher: SpriteBatcher) {
+        val renderPassScope = checkNotNull(batcher.device.activeRenderPassScope) { "You can only create a SpriteBatcherScope inside a RenderPass!" }
         var disposed = false
 
         fun drawTriangle(
@@ -260,14 +267,19 @@ class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
         }
 
         fun drawVertexGroup(vertexCount: Int, texture: Texture, block: SpriteBatcherScope.() -> Unit) {
-            batcher.flushIfNeeded(shader, vertexCount * vertexAttributes.totalSize)
-            batcher.setActiveTexture(shader, texture)
+            batcher.flushIfNeeded(vertexCount * vertexAttributes.totalSize)
+            batcher.setActiveTexture(texture)
 
             block(this)
         }
 
         fun drawVertex(x: Float, y: Float, u: Float, v: Float, blendR: Float, blendG: Float, blendB: Float, blendA: Float) {
-            require(!disposed) { "SpriteBatcherScope is already disposed!" }
+            check(!disposed) { "SpriteBatcherScope is already disposed!" }
+
+            if (batcher.currentIndex == 0) {
+                batcher.renderPassScope = renderPassScope
+                batcher.stateVersion = renderPassScope.stateVersion
+            }
 
             batcher.batch[batcher.currentIndex++] = x; batcher.batch[batcher.currentIndex++] = y;
             batcher.batch[batcher.currentIndex++] = u; batcher.batch[batcher.currentIndex++] = v;
@@ -278,12 +290,6 @@ class SpriteBatcher(val gl: GLContext, spritesPerBatch: Int = 1024) {
             batcher.batch[batcher.currentIndex++] = blendA
         }
 
-        fun flush() = batcher.flush(shader)
-    }
-}
-
-fun <T : SpriteShader> RenderTargetScope.withSpritePipeline(batcher: SpriteBatcher, shader: T, block: PipelineScope<T>.(SpriteBatcher) -> (Unit)) {
-    withPipeline(batcher.createSpritePipeline(shader)) {
-        block(batcher)
+        fun flush() = batcher.flush()
     }
 }

@@ -10,11 +10,10 @@ import net.perfectdreams.harmony.gl.opengl.OpenGLContext
 import net.perfectdreams.harmony.gl.opengl.OpenGLDebugging
 import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.batcher.SpriteBatcher
-import net.perfectdreams.harmony.render.batcher.withSpritePipeline
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import net.perfectdreams.harmony.render.pipelines.Pipeline
 import net.perfectdreams.harmony.render.pipelines.DepthState
-import net.perfectdreams.harmony.render.rendertarget.ClearOptions
+import net.perfectdreams.harmony.render.renderpass.ClearOptions
 import net.perfectdreams.harmony.render.textures.TextureFormat
 import net.perfectdreams.harmony.render.vertex.buildVertexAttributes
 import org.joml.Matrix4f
@@ -324,7 +323,7 @@ fun main() {
     )
     texture.writeSection(textureSource2, 128, 128)
 
-    val batcher = SpriteBatcher(gl)
+    val batcher = SpriteBatcher(gpu)
 
     var cameraX = 0f
     var cameraY = 0f
@@ -411,26 +410,26 @@ fun main() {
             }
 
             gpu.renderPass(framebuffer, clear = ClearOptions(color = clearColor)) {
-                withSpritePipeline(batcher, uiShader) {
-                    this.shader.uProjection.set(Matrix4f().ortho(0f, 64f, 64f, 0f, -1f, 1f).get(FloatArray(16)))
+                setPipeline(batcher.createSpritePipeline(uiShader))
 
-                    batcher.drawBatch(this) {
-                        drawQuad(
-                            0.0f,
-                            0.0f,
-                            64f,
-                            64f,
-                            0f,
-                            0f,
-                            1f,
-                            1f,
-                            texture,
-                            1f,
-                            1f,
-                            1f,
-                            1f
-                        )
-                    }
+                uiShader.uProjection.set(Matrix4f().ortho(0f, 64f, 64f, 0f, -1f, 1f).get(FloatArray(16)))
+
+                batcher.drawBatch {
+                    drawQuad(
+                        0.0f,
+                        0.0f,
+                        64f,
+                        64f,
+                        0f,
+                        0f,
+                        1f,
+                        1f,
+                        texture,
+                        1f,
+                        1f,
+                        1f,
+                        1f
+                    )
                 }
             }
 
@@ -439,20 +438,21 @@ fun main() {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)
                         .rotateY(SDL_GetTicks() / 1000f)
-                    this.shader.uProjection.set(projection.get(FloatArray(16)))
-                    this.shader.uView.set(view.get(FloatArray(16)))
-                    this.shader.uModel.set(model.get(FloatArray(16)))
-                    this.shader.uBlendColor.set((sin(SDL_GetTicks() / 1000f) + 1f) * 0.5f, (sin(SDL_GetTicks() / 1000f) + 1f) * 0.5f, (sin(SDL_GetTicks() / 1000f) + 1f) * 0.5f, 1.0f)
-                    this.shader.uTexture.set(0, texture)
-                    this.shader.uCameraPosition.set(cameraX, cameraY, cameraZ)
+                    shader.uProjection.set(projection.get(FloatArray(16)))
+                    shader.uView.set(view.get(FloatArray(16)))
+                    shader.uModel.set(model.get(FloatArray(16)))
+                    shader.uBlendColor.set((sin(SDL_GetTicks() / 1000f) + 1f) * 0.5f, (sin(SDL_GetTicks() / 1000f) + 1f) * 0.5f, (sin(SDL_GetTicks() / 1000f) + 1f) * 0.5f, 1.0f)
+                    shader.uTexture.set(0, texture)
+                    shader.uCameraPosition.set(cameraX, cameraY, cameraZ)
                     gl.bindVertexArray(vao)
                     gl.drawArrays(GLConstants.GL_TRIANGLES, 0, 6 * 6)
                 }
 
-                withSpritePipeline(batcher, uiShader) {
-                    this.shader.uProjection.set(uiProjection.get(FloatArray(16)))
+                withPipeline(batcher.createSpritePipeline(uiShader)) {
 
-                    batcher.drawBatch(this) {
+                    uiShader.uProjection.set(uiProjection.get(FloatArray(16)))
+
+                    batcher.drawBatch {
                         drawQuad(
                             0.0f,
                             0.0f,
