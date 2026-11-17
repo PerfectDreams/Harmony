@@ -4,7 +4,6 @@ import net.perfectdreams.harmony.gl.ByteArrayTextureSource
 import net.perfectdreams.harmony.gl.GLConstants
 import net.perfectdreams.harmony.gl.GLConstants.GL_ARRAY_BUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_CLAMP_TO_EDGE
-import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_NEAREST
 import net.perfectdreams.harmony.gl.GLConstants.GL_STATIC_DRAW
 import net.perfectdreams.harmony.gl.opengl.OpenGLContext
@@ -411,7 +410,7 @@ fun main() {
                 cameraY = 0f
             }
 
-            gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = clearColor)) {
+            gpu.renderPass(framebuffer, clear = ClearOptions(color = clearColor)) {
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(Matrix4f().ortho(0f, 64f, 64f, 0f, -1f, 1f).get(FloatArray(16)))
 
@@ -435,7 +434,7 @@ fun main() {
                 }
             }
 
-            gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = clearColor, depth = 1f)) {
+            gpu.renderPass(windowRenderTarget, clear = ClearOptions(color = clearColor, depth = 1f)) {
                 withPipeline(Pipeline(shader, depth = DepthState(write = true))) {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)

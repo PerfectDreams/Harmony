@@ -381,7 +381,7 @@ fun main() {
             }
 
 
-            gpu.onRenderTarget(framebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
+            gpu.renderPass(framebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
                 withPipeline(Pipeline(shader, depth = DepthState(write = true), blend = BlendState.AlphaBlending)) {
                     val model = Matrix4f()
                         .translate(0f, sin(SDL_GetTicks() / 1000f) * 0.25f, 0f)
@@ -445,7 +445,7 @@ fun main() {
                 overrideDrawBuffers = null,
             )
 
-            gpu.onRenderTarget(outlineFramebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
+            gpu.renderPass(outlineFramebuffer, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 0.0f, 0.0f), depth = 1f)) {
                 withSpritePipeline(batcher, outlineShader) {
                     this.shader.uProjection.set(tinyUiProjection.get(FloatArray(16)))
 
@@ -465,7 +465,7 @@ fun main() {
                 }
             }
 
-            gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
+            gpu.renderPass(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
                 withSpritePipeline(batcher, uiShader) {
                     this.shader.uProjection.set(uiProjection.get(FloatArray(16)))
 

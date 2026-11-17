@@ -385,12 +385,12 @@ class RenderDevice(val gl: GLContext) {
     }
 
     // RenderTarget related things are things that affect the ENTIRE RenderTarget (like clear)
-    fun onRenderTarget(
+    fun renderPass(
         target: RenderTarget,
         clear: ClearOptions,
         block: RenderTargetScope.() -> (Unit)
     ) {
-        require(!this.isInsideARenderTarget) { "You cannot nest onRenderTarget calls!" }
+        require(!this.isInsideARenderTarget) { "You cannot nest renderPass calls!" }
         try {
             this.isInsideARenderTarget = true
 

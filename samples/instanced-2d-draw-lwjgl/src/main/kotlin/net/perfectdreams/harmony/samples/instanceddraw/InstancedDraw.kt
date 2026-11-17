@@ -3,8 +3,6 @@ package net.perfectdreams.harmony.samples.instanceddraw
 import net.perfectdreams.harmony.gl.ByteArrayTextureSource
 import net.perfectdreams.harmony.gl.GLConstants.GL_ARRAY_BUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_CLAMP_TO_EDGE
-import net.perfectdreams.harmony.gl.GLConstants.GL_COLOR_BUFFER_BIT
-import net.perfectdreams.harmony.gl.GLConstants.GL_DEPTH_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLConstants.GL_DYNAMIC_DRAW
 import net.perfectdreams.harmony.gl.GLConstants.GL_ELEMENT_ARRAY_BUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_LINEAR
@@ -183,7 +181,7 @@ fun main() {
                     running = false
             }
 
-            gpu.onRenderTarget(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
+            gpu.renderPass(windowRenderTarget, clear = ClearOptions(color = ClearOptions.Color(0.0f, 0.0f, 1.0f, 1.0f), depth = 1f)) {
                 withPipeline(Pipeline(uiShader)) {
                     gl.bindBuffer(GL_ARRAY_BUFFER, vbo2)
                     var idx = 0
