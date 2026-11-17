@@ -300,10 +300,10 @@ fun main() {
 
     val framebuffer = gpu.createFramebuffer(
         FramebufferAttachments(
-            mapOf(
-                0 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
-                1 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
-                2 to FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
+            listOf(
+                FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
+                FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4)),
+                FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.RGBA8, 4))
             ),
             depthStencilAttachment = FramebufferAttachment.RenderbufferAttachment(gpu.createRenderbuffer(160, 90, TextureFormat.DEPTH24, 4))
         )
@@ -346,7 +346,7 @@ fun main() {
     )
     val framebufferBlitTarget = gpu.createFramebuffer(
         FramebufferAttachments(
-            mapOf(),
+            emptyList(),
             depthStencilAttachment = FramebufferAttachment.TextureAttachment(gpu.createTexture(160, 90, TextureFormat.DEPTH24, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST))
         )
     )

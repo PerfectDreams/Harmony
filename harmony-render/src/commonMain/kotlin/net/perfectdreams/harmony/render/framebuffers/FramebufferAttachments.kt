@@ -1,13 +1,9 @@
 package net.perfectdreams.harmony.render.framebuffers
 
 class FramebufferAttachments(
-    val colorAttachments: Map<Int, FramebufferAttachment>,
+    val colorAttachments: List<FramebufferAttachment?>,
     val depthStencilAttachment: FramebufferAttachment?
 ) {
-    init {
-        require(colorAttachments.isEmpty() || colorAttachments.keys.all { it >= 0 }) { "You can't have negative color attachment indices!" }
-    }
-
     val color0 get() = colorAttachments[0]
     val color1 get() = colorAttachments[1]
     val color2 get() = colorAttachments[2]

@@ -7,12 +7,13 @@ import net.perfectdreams.harmony.gl.GLConstants.GL_FRAMEBUFFER
 import net.perfectdreams.harmony.gl.GLConstants.GL_STENCIL_BUFFER_BIT
 import net.perfectdreams.harmony.gl.GLContext
 import net.perfectdreams.harmony.gl.GLFramebuffer
+import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.rendertarget.RenderTarget
 import net.perfectdreams.harmony.render.rendertarget.WindowRenderTarget
 import kotlin.collections.iterator
 
 class Framebuffer(
-    val gl: GLContext,
+    val device: RenderDevice,
     val framebufferId: GLFramebuffer,
     val attachments: FramebufferAttachments,
     override val width: Int,
@@ -21,6 +22,9 @@ class Framebuffer(
     val initialDrawBuffers: IntArray,
     val isMultisampled: Boolean
 ) : AutoCloseable, RenderTarget() {
+    private val gl
+        get() = device.gl
+
     fun blitTo(
         target: RenderTarget,
         filter: Int,
@@ -66,6 +70,7 @@ class Framebuffer(
         overrideReadBuffer: Int?,
         overrideDrawBuffers: IntArray?
     ) {
+        require(!device.isInsideARenderTarget) { "You cannot blit framebuffers while inside a render target!" }
         require(copyColor || copyDepth || copyStencil) { "A blit needs to copy at least one of color, depth or stencil!" }
         require(!isMultisampled || (sourceWidth == targetWidth && sourceHeight == targetHeight)) { "Cannot scale while copying from a multisampled framebuffer, the source region is ${sourceWidth}x${sourceHeight} but the target region is ${targetWidth}x${targetHeight}!" }
         require(overrideDrawBuffers == null || target is Framebuffer) { "You can only set overrideDrawBuffers if the target is a framebuffer!" }
@@ -128,7 +133,8 @@ class Framebuffer(
         }
 
         for (attachment in attachments.colorAttachments) {
-            deleteAttachment(attachment.value)
+            if (attachment != null)
+                deleteAttachment(attachment)
         }
 
         attachments.depthStencilAttachment?.let { deleteAttachment(it) }
@@ -136,11 +142,11 @@ class Framebuffer(
 }
 
 inline fun <T> Framebuffer.withFramebuffer(block: () -> T): T {
-    gl.bindFramebuffer(GL_FRAMEBUFFER, framebufferId)
-    gl.viewport(0, 0, this.width, this.height)
+    device.gl.bindFramebuffer(GL_FRAMEBUFFER, framebufferId)
+    device.gl.viewport(0, 0, this.width, this.height)
     try {
         return block()
     } finally {
-        gl.bindFramebuffer(GL_FRAMEBUFFER, null)
+        device.gl.bindFramebuffer(GL_FRAMEBUFFER, null)
     }
 }

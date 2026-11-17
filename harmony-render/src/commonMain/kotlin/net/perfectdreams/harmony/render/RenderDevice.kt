@@ -28,7 +28,8 @@ import net.perfectdreams.harmony.render.viewports.Viewport
 
 class RenderDevice(val gl: GLContext) {
     val white1x1Texture = create1x1Texture(0xFF, 0xFF, 0xFF, 0xFF)
-    private var isInsideARenderTarget = false
+    var isInsideARenderTarget = false
+        private set
 
     fun create1x1Texture(red: Int, green: Int, blue: Int, alpha: Int) = createTexture(
         ByteArrayTextureSource(1, 1, byteArrayOf(red.toByte(), green.toByte(), blue.toByte(), alpha.toByte())),
@@ -223,9 +224,9 @@ class RenderDevice(val gl: GLContext) {
     }
 
     fun createFramebuffer(colorTexture: Texture?, depthTexture: Texture?): Framebuffer {
-        val colorAttachments = mutableMapOf<Int, FramebufferAttachment>()
+        val colorAttachments = mutableListOf<FramebufferAttachment>()
         if (colorTexture != null) {
-            colorAttachments[0] = FramebufferAttachment.TextureAttachment(colorTexture)
+            colorAttachments.add(FramebufferAttachment.TextureAttachment(colorTexture))
         }
         return createFramebuffer(FramebufferAttachments(colorAttachments, depthTexture?.let { FramebufferAttachment.TextureAttachment(it) }))
     }
@@ -250,11 +251,25 @@ class RenderDevice(val gl: GLContext) {
             require(targetSamples == samples) { "Found a $samples samples attachment on a $targetSamples samples framebuffer!" }
         }
 
-        for ((attachmentIndex, attachment) in attachments.colorAttachments) {
-            updateTargetDimensions(attachment.width, attachment.height, attachment.samples)
-            when (attachment) {
-                is FramebufferAttachment.TextureAttachment -> gl.framebufferTexture2D(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GLConstants.GL_TEXTURE_2D, attachment.texture.textureId, 0)
-                is FramebufferAttachment.RenderbufferAttachment -> gl.framebufferRenderbuffer(GLConstants.GL_FRAMEBUFFER, GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex, GL_RENDERBUFFER, attachment.renderbuffer.renderbufferId)
+        for ((attachmentIndex, attachment) in attachments.colorAttachments.withIndex()) {
+            if (attachment != null) {
+                updateTargetDimensions(attachment.width, attachment.height, attachment.samples)
+                when (attachment) {
+                    is FramebufferAttachment.TextureAttachment -> gl.framebufferTexture2D(
+                        GL_FRAMEBUFFER,
+                        GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex,
+                        GLConstants.GL_TEXTURE_2D,
+                        attachment.texture.textureId,
+                        0
+                    )
+
+                    is FramebufferAttachment.RenderbufferAttachment -> gl.framebufferRenderbuffer(
+                        GL_FRAMEBUFFER,
+                        GLConstants.GL_COLOR_ATTACHMENT0 + attachmentIndex,
+                        GL_RENDERBUFFER,
+                        attachment.renderbuffer.renderbufferId
+                    )
+                }
             }
         }
 
@@ -268,12 +283,12 @@ class RenderDevice(val gl: GLContext) {
             drawBuffers = intArrayOf(GLConstants.GL_NONE)
             readBuffer = GLConstants.GL_NONE
         } else {
-            val max = attachments.colorAttachments.keys.max()
+            val max = attachments.colorAttachments.size
 
             val array = IntArray(max + 1)
 
-            for (i in 0..max) {
-                val contains = attachments.colorAttachments.containsKey(i)
+            for (i in 0 until max) {
+                val contains = attachments.colorAttachments[i] != null
                 array[i] = if (contains)
                     GLConstants.GL_COLOR_ATTACHMENT0 + i
                 else
@@ -281,7 +296,7 @@ class RenderDevice(val gl: GLContext) {
             }
 
             drawBuffers = array
-            readBuffer = GLConstants.GL_COLOR_ATTACHMENT0 + attachments.colorAttachments.keys.min()
+            readBuffer = GLConstants.GL_COLOR_ATTACHMENT0 + attachments.colorAttachments.indexOfFirst { it != null }
         }
 
         gl.drawBuffers(drawBuffers)
@@ -299,7 +314,7 @@ class RenderDevice(val gl: GLContext) {
         check(status == GLConstants.GL_FRAMEBUFFER_COMPLETE) { "Framebuffer is incomplete! Status: 0x${status.toString(16)}" }
         gl.bindFramebuffer(GLConstants.GL_FRAMEBUFFER, null)
 
-        return Framebuffer(gl, framebufferId, attachments, targetWidth, targetHeight, readBuffer, drawBuffers, targetSamples != 1)
+        return Framebuffer(this, framebufferId, attachments, targetWidth, targetHeight, readBuffer, drawBuffers, targetSamples != 1)
     }
 
     /**
