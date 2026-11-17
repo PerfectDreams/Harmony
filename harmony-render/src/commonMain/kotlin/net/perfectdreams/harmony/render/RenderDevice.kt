@@ -24,6 +24,7 @@ import net.perfectdreams.harmony.render.textures.TextureArray
 import net.perfectdreams.harmony.render.textures.TextureFormat
 import net.perfectdreams.harmony.render.textures.TextureGrid
 import net.perfectdreams.harmony.render.textures.withTexture
+import net.perfectdreams.harmony.render.viewports.Viewport
 
 class RenderDevice(val gl: GLContext) {
     val white1x1Texture = create1x1Texture(0xFF, 0xFF, 0xFF, 0xFF)
@@ -378,7 +379,9 @@ class RenderDevice(val gl: GLContext) {
         try {
             this.isInsideARenderTarget = true
 
-            val scope = RenderTargetScope(this, target)
+            gl.disable(GLConstants.GL_SCISSOR_TEST)
+
+            val scope = RenderTargetScope(this, target, Viewport(0, 0, target.width, target.height))
 
             val innerBlock = {
                 val color = clear.color

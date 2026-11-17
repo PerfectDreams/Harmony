@@ -5,11 +5,30 @@ import net.perfectdreams.harmony.render.RenderDevice
 import net.perfectdreams.harmony.render.framebuffers.Framebuffer
 import net.perfectdreams.harmony.render.pipelines.Pipeline
 import net.perfectdreams.harmony.render.pipelines.PipelineScope
+import net.perfectdreams.harmony.render.scissors.ScissorRect
 import net.perfectdreams.harmony.render.shaders.ShaderProgram
 import net.perfectdreams.harmony.render.shaders.withProgram
+import net.perfectdreams.harmony.render.viewports.Viewport
 
-class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget) {
+class RenderTargetScope(val gpu: RenderDevice, val renderTarget: RenderTarget, private val initialViewport: Viewport) {
     private var isInsideAPipeline = false
+
+    fun setViewport(viewport: Viewport?) {
+        require(!this.isInsideAPipeline) { "You cannot call setViewport inside withPipeline!" }
+        val targetViewport = viewport ?: this.initialViewport
+        gpu.gl.viewport(targetViewport.x, targetViewport.y, targetViewport.width, targetViewport.height)
+    }
+
+    fun setScissor(scissor: ScissorRect?) {
+        require(!this.isInsideAPipeline) { "You cannot call setScissor inside withPipeline!" }
+        if (scissor == null) {
+            gpu.gl.disable(GLConstants.GL_SCISSOR_TEST)
+            return
+        }
+
+        gpu.gl.enable(GLConstants.GL_SCISSOR_TEST)
+        gpu.gl.scissor(scissor.x, scissor.y, scissor.width, scissor.height)
+    }
 
     fun <T : ShaderProgram> withPipeline(pipeline: Pipeline<T>, block: PipelineScope<T>.() -> (Unit)) {
         require(!this.isInsideAPipeline) { "You cannot nest withPipeline calls!" }
